@@ -1,0 +1,23 @@
+---
+ESMEs:
+   Cluster:
+      - Name: cluster1
+        Members:
+           - Name: emse1
+             ListenIP: 10.1.1.1
+             ListenPort: 5000
+             BindTargets:
+                - Name: smsc-cluster01
+                  BindIP: 192.168.1.1
+                  BindPort: 5000
+                  BindSystemID: cluster1-emse1
+                  BindPassword: passwd
+                  BindSystemType: rcs
+           - Name: esme2
+             ListenIP: 10.1.1.2
+             ListenPort: 5000
+             BindTargets:
+                ...
+      - Name: cluster2
+          Members:
+            ...
