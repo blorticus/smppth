@@ -10,15 +10,4 @@
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
-bin/go-outline
-bin/dlv
-bin/go-symbols
-bin/gocode
-bin/godef
-bin/golint
-bin/gomodifytags
-bin/gopkgs
-bin/gorename
-bin/goreturns
-bin/guru
-bin/gocode-gomod
+bin/*
