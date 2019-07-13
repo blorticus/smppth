@@ -3,30 +3,15 @@ package main
 import (
 	"errors"
 	"fmt"
-	"net"
 	"os"
 	"path"
 	"smpp"
-)
-
-type esmeEventType int
-
-const (
-	receivedMessage esmeEventType = iota
 )
 
 type messageDescriptor struct {
 	sendFromEsmeNamed string
 	sendToSmscNamed   string
 	pdu               *smpp.PDU
-}
-
-type esmeListenerEvent struct {
-	Type       esmeEventType
-	sourceEsme *esme
-	smppPDU    *smpp.PDU
-	peerIP     net.IP
-	peerPort   uint16
 }
 
 type esmeDescriptor struct {
@@ -39,7 +24,7 @@ func newOutputter() *outputter {
 	return &outputter{}
 }
 
-func (outputter *outputter) sayThatMessageWasReceived(message *smpp.PDU, peerIP net.IP, peerPort uint16) {
+func (outputter *outputter) sayThatMessageWasReceived(message *smpp.PDU, nameOfSender string) {
 
 }
 
@@ -64,26 +49,22 @@ func main() {
 	esmes, _, err := yamlReader.parseFile(yamlFileName)
 	outputter.dieIfError(err)
 
-	esmeEventListenerConcentrator := newEventChannelConcentrator()
+	esmeEventChannel := make(chan *esmeListenerEvent, len(esmes))
 
 	for _, esme := range esmes {
 		app.mapEsmeNameToItsReceiverChannel(esme.name, esme.outgoingMessageChannel())
-		esmeEventListenerConcentrator.addEventChannelForEsmeNamed(esme.name, esme.incomingEventChannel())
-		go esme.startListening()
+		go esme.startListening(esmeEventChannel)
 	}
 
 	appControlBroker := newApplicationControlBroker()
 	channelOfMessagesToSend := appControlBroker.retrieveSendMessageChannel()
 	go appControlBroker.startListening()
 
-	esmeEventListenerConcentrator.startReceivingEvents()
-	eventConcentratorChannel := esmeEventListenerConcentrator.retrieveConcentrationChannel()
-
 	for {
 		select {
-		case event := <-eventConcentratorChannel:
+		case event := <-esmeEventChannel:
 			if event.Type == receivedMessage {
-				outputter.sayThatMessageWasReceived(event.smppPDU, event.peerIP, event.peerPort)
+				outputter.sayThatMessageWasReceived(event.smppPDU, event.nameOfMessageSender)
 			}
 
 		case messageToSendDescriptor := <-channelOfMessagesToSend:
@@ -94,6 +75,7 @@ func main() {
 }
 
 type esmeClusterApplication struct {
+	esmeReceiveChannelByEsmeName map[string]chan *messageDescriptor
 }
 
 func newEsmeClusterApplication() *esmeClusterApplication {
@@ -112,14 +94,10 @@ func (app *esmeClusterApplication) syntaxString() string {
 	return fmt.Sprintf("%s <yaml_file>", path.Base(os.Args[0]))
 }
 
-func (app *esmeClusterApplication) addEsmePeer(emse *esme) {
-
+func (app *esmeClusterApplication) mapEsmeNameToItsReceiverChannel(esmeName string, messageChannel chan *messageDescriptor) {
+	app.esmeReceiveChannelByEsmeName[esmeName] = messageChannel
 }
 
-func (app *esmeClusterApplication) mapEsmeNameToItsReceiverChannel(esmeName string, messageChannel chan<- *messageDescriptor) {
-
-}
-
-func (app *esmeClusterApplication) retrieveOutgoingMessageChannelFromEsmeNamed(esmeName string) chan<- *messageDescriptor {
+func (app *esmeClusterApplication) retrieveOutgoingMessageChannelFromEsmeNamed(esmeName string) chan *messageDescriptor {
 	return nil
 }
