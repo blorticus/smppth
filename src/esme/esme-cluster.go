@@ -8,15 +8,6 @@ import (
 	"smpp"
 )
 
-type messageDescriptor struct {
-	sendFromEsmeNamed string
-	sendToSmscNamed   string
-	pdu               *smpp.PDU
-}
-
-type esmeDescriptor struct {
-}
-
 type outputter struct {
 }
 
