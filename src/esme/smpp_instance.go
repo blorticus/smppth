@@ -6,15 +6,23 @@ import (
 	"smpp"
 )
 
+type messageDescriptor struct {
+	sendFromEsmeNamed string
+	sendToSmscNamed   string
+	pdu               *smpp.PDU
+}
+
 type esmeEventType int
 
 const (
 	receivedMessage esmeEventType = iota
+	completedBind
 )
 
 type esmeListenerEvent struct {
 	Type                esmeEventType
 	sourceEsme          *esme
+	boundPeerName       string
 	smppPDU             *smpp.PDU
 	nameOfMessageSender string
 }
@@ -37,7 +45,7 @@ type esmePeerMessageListener struct {
 }
 
 func newEsmePeerMessageListener(nameOfPeer string, parentESME *esme, connectionToRemotePeer net.Conn) *esmePeerMessageListener {
-	return &esmePeerMessageListener{nameOfRemotePeer: nameOfPeer, parentESME: parentESME, peerConnection: connectionToRemotePeer}
+	return &esmePeerMessageListener{nameOfRemotePeer: nameOfPeer, parentESME: parentESME, peerConnection: connectionToRemotePeer, streamReader: smpp.NewNetworkStreamReader(connectionToRemotePeer)}
 }
 
 func (connector *esmePeerMessageListener) completeTransceiverBindingTowardPeer(esmeSystemID string, esmeSystemType string, bindPassword string) error {
@@ -90,23 +98,23 @@ func (connector *esmePeerMessageListener) startListeningForIncomingMessagesFromP
 	}
 }
 
-type esme struct {
-	name                        string
-	ip                          net.IP
-	port                        uint16
-	peerBinds                   []smppBindInfo
-	channelsForPeerSendMessages map[string]chan *messageDescriptor
-	streamReader                *smpp.NetworkStreamReader
-}
-
 type smsc struct {
 	name string
 	ip   net.IP
 	port uint16
 }
 
-func (esme *esme) outgoingMessageChannel() chan *messageDescriptor {
-	return nil
+type esme struct {
+	name                                        string
+	ip                                          net.IP
+	port                                        uint16
+	peerBinds                                   []smppBindInfo
+	connectionToPeerForPeerNamed                map[string]net.Conn
+	channelForMessagesThisEsmeShouldSendToPeers chan *messageDescriptor
+}
+
+func newEsme(esmeName string, esmeIP net.IP, esmePort uint16) *esme {
+	return &esme{name: esmeName, ip: esmeIP, port: esmePort, peerBinds: make([]smppBindInfo, 0, 10), connectionToPeerForPeerNamed: make(map[string]net.Conn)}
 }
 
 func (esme *esme) startListening(eventChannel chan<- *esmeListenerEvent) {
@@ -118,8 +126,9 @@ func (esme *esme) startListening(eventChannel chan<- *esmeListenerEvent) {
 		err = peerConnector.completeTransceiverBindingTowardPeer(peerBind.systemID, peerBind.systemType, peerBind.password)
 		esme.panicIfError(err)
 
-		peerSendMessageChannel := make(chan *messageDescriptor)
-		esme.channelsForPeerSendMessages[peerBind.smscName] = peerSendMessageChannel
+		eventChannel <- &esmeListenerEvent{Type: completedBind, boundPeerName: peerBind.smscName}
+
+		esme.connectionToPeerForPeerNamed[peerBind.smscName] = conn
 
 		go peerConnector.startListeningForIncomingMessagesFromPeer(eventChannel)
 	}
@@ -135,10 +144,32 @@ func (esme *esme) connectTransportToPeer(remoteIP net.IP, remotePort uint16) (ne
 	return net.Dial("tcp", fmt.Sprintf("%s:%d", remoteIP.String(), remotePort))
 }
 
-func (esme *esme) sendMessageToPeer(message *messageDescriptor) {
+func (esme *esme) sendMessageToPeer(message *messageDescriptor) error {
+	connectionToPeer := esme.connectionToPeerForPeerNamed[message.sendToSmscNamed]
 
+	if connectionToPeer == nil {
+		return fmt.Errorf("No such SMSC peer named (%s) is known to this ESME", message.sendToSmscNamed)
+	}
+
+	encodedPDU, err := message.pdu.Encode()
+
+	if err != nil {
+		return err
+	}
+
+	_, err = connectionToPeer.Write(encodedPDU)
+
+	if err != nil {
+		return fmt.Errorf("Error writing PDU to peer named (%s): %s", message.sendToSmscNamed, err)
+	}
+
+	return nil
 }
 
-func (esme *esme) incomingEventChannel() <-chan *esmeListenerEvent {
-	return nil
+func (esme *esme) outgoingMessageChannel() chan *messageDescriptor {
+	if esme.channelForMessagesThisEsmeShouldSendToPeers == nil {
+		esme.channelForMessagesThisEsmeShouldSendToPeers = make(chan *messageDescriptor)
+	}
+
+	return esme.channelForMessagesThisEsmeShouldSendToPeers
 }
