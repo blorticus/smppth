@@ -2,8 +2,38 @@ package main
 
 import (
 	"net"
+	"smpp"
 	"time"
 )
+
+func testSmppMsgTransceiverResp01() []byte {
+	return []byte{
+		0, 0, 0, 0x14, // len = 20
+		0x80, 0, 0, 0x02, // command = bind_trasceiver_resp
+		0, 0, 0, 0x00, // status code = 0
+		0, 0, 0, 0x01, // seq number = 1
+		0x66, 0x6f, 0x6f, 0, // systemID = 'foo'
+	}
+}
+
+func testSmppPDUTransceiverResp01() *smpp.PDU {
+	pdu, _ := smpp.DecodePDU(testSmppMsgTransceiverResp01())
+	return pdu
+}
+
+func testSmppMsgEnquireLink01() []byte {
+	return []byte{
+		0, 0, 0, 0x10, // len = 16
+		0, 0, 0, 0x15, // command = eqnuire_link
+		0, 0, 0, 0x00, // status code = 0
+		0, 0, 0, 0x02, // seq number = 2
+	}
+}
+
+func testSmppPDUEnquireLink01() *smpp.PDU {
+	pdu, _ := smpp.DecodePDU(testSmppMsgEnquireLink01())
+	return pdu
+}
 
 type fakeNetConn struct {
 	nextReadValue []byte
@@ -11,28 +41,10 @@ type fakeNetConn struct {
 
 	lastWriteValue []byte
 	nextWriteError error
-
-	bindTrasceiverResp01Msg []byte
-	enquireLink01Msg        []byte
 }
 
 func newFakeNetConn() *fakeNetConn {
-	conn := &fakeNetConn{
-		bindTrasceiverResp01Msg: []byte{
-			0, 0, 0, 0x14, // len = 20
-			0x80, 0, 0, 0x02, // command = bind_trasceiver_resp
-			0, 0, 0, 0x00, // status code = 0
-			0, 0, 0, 0x01, // seq number = 1
-			0x66, 0x6f, 0x6f, 0, // systemID = 'foo'
-		},
-
-		enquireLink01Msg: []byte{
-			0, 0, 0, 0x10, // len = 16
-			0, 0, 0, 0x15, // command = eqnuire_link
-			0, 0, 0, 0x00, // status code = 0
-			0, 0, 0, 0x02, // seq number = 2
-		},
-	}
+	conn := &fakeNetConn{}
 
 	return conn
 }
