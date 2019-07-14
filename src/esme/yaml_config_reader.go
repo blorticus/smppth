@@ -82,7 +82,7 @@ func (reader *applicationConfigYamlReader) parseReader(ioReader io.Reader) ([]*e
 		}
 
 		esmeDefinitionByName[esmeDefinition.Name] = esmeDefinition
-		esme := &esme{name: esmeDefinition.Name, ip: bindIP, port: esmeDefinition.Port, peerBinds: make([]smppBindInfo, 0, 10)}
+		esme := newEsme(esmeDefinition.Name, bindIP, esmeDefinition.Port)
 		esmeObjectByName[esmeDefinition.Name] = esme
 		esmeObjectList[i] = esme
 	}
