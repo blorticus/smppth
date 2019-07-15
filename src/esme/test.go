@@ -91,3 +91,68 @@ func (conn *fakeNetConn) SetReadDeadline(t time.Time) error {
 func (conn *fakeNetConn) SetWriteDeadline(t time.Time) error {
 	return nil
 }
+
+type mockWriterOnWriteCallbackFunc func(bytesWritten []byte, writeLength int, err error)
+
+type mockWriter struct {
+	writesSinceLastClear [][]byte
+	onWriteCallback      mockWriterOnWriteCallbackFunc
+}
+
+func newMockWriter() *mockWriter {
+	return &mockWriter{writesSinceLastClear: [][]byte{}, onWriteCallback: nil}
+}
+
+func (writer *mockWriter) Write(bytesToWrite []byte) (int, error) {
+	writer.writesSinceLastClear = append(writer.writesSinceLastClear, bytesToWrite)
+
+	if writer.onWriteCallback != nil {
+		writer.onWriteCallback(bytesToWrite, len(bytesToWrite), nil)
+	}
+
+	return len(bytesToWrite), nil
+}
+
+func (writer *mockWriter) getLastWrittenValues() [][]byte {
+	return writer.writesSinceLastClear
+}
+
+func (writer *mockWriter) clearStoresWrites() {
+	writer.writesSinceLastClear = [][]byte{}
+}
+
+func (writer *mockWriter) setOnWriteCallback(callback mockWriterOnWriteCallbackFunc) {
+	writer.onWriteCallback = callback
+}
+
+func (writer *mockWriter) clearOnWriteCallback() {
+	writer.onWriteCallback = nil
+}
+
+type mockReader struct {
+	nextReadValue []byte
+}
+
+func newMockReader() *mockReader {
+	return &mockReader{nextReadValue: []byte{}}
+}
+
+func (reader *mockReader) setNextReadValue(nextReadValue []byte) {
+	reader.nextReadValue = nextReadValue[:]
+}
+
+func (reader *mockReader) Read(readBuffer []byte) (int, error) {
+	readLength := 0
+	if len(readBuffer) < len(reader.nextReadValue) {
+		copy(readBuffer, reader.nextReadValue[:len(readBuffer)])
+		reader.nextReadValue = reader.nextReadValue[len(readBuffer):]
+		readLength = len(readBuffer)
+	} else {
+		copy(readBuffer, reader.nextReadValue)
+		readLength = len(reader.nextReadValue)
+	}
+
+	reader.nextReadValue = []byte{}
+
+	return readLength, nil
+}

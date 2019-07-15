@@ -126,7 +126,7 @@ func (esme *esme) startListening(eventChannel chan<- *esmeListenerEvent) {
 		err = peerConnector.completeTransceiverBindingTowardPeer(peerBind.systemID, peerBind.systemType, peerBind.password)
 		esme.panicIfError(err)
 
-		eventChannel <- &esmeListenerEvent{Type: completedBind, boundPeerName: peerBind.smscName}
+		eventChannel <- &esmeListenerEvent{Type: completedBind, sourceEsme: esme, boundPeerName: peerBind.smscName}
 
 		esme.connectionToPeerForPeerNamed[peerBind.smscName] = conn
 

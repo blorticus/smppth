@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"smpp"
@@ -16,6 +17,14 @@ func newOutputter() *outputter {
 }
 
 func (outputter *outputter) sayThatMessageWasReceived(message *smpp.PDU, nameOfSender string) {
+
+}
+
+func (outputter *outputter) sayThatBindWasCompletedWithPeer(nameOfBoundPeer string) {
+
+}
+
+func (outputter *outputter) sayThatYouTriedToSendMessageFromUnknownEsme(nameOfEsme string) {
 
 }
 
@@ -47,20 +56,33 @@ func main() {
 		go esme.startListening(esmeEventChannel)
 	}
 
-	appControlBroker := newApplicationControlBroker()
-	channelOfMessagesToSend := appControlBroker.retrieveSendMessageChannel()
-	go appControlBroker.startListening()
+	fileWriterStream, err := app.getIoWriterStreamHandleForFileNamed("foo.out")
+	outputter.dieIfError(err)
+
+	interactionBroker := newInteractionBroker().setInputPromptStream(os.Stdout).setInputReader(os.Stdin).setOutputWriter(fileWriterStream)
+	channelOfMessagesToSend := interactionBroker.retrieveSendMessageChannel()
+	go interactionBroker.beginInteractiveSession()
 
 	for {
 		select {
 		case event := <-esmeEventChannel:
-			if event.Type == receivedMessage {
-				outputter.sayThatMessageWasReceived(event.smppPDU, event.nameOfMessageSender)
+			switch event.Type {
+			case receivedMessage:
+				interactionBroker.notifyThatSmppPduWasReceived(event.smppPDU, event.sourceEsme.name, event.nameOfMessageSender)
+
+			case completedBind:
+				interactionBroker.notifyThatBindWasCompletedWithPeer(event.sourceEsme.name, event.boundPeerName)
 			}
 
-		case messageToSendDescriptor := <-channelOfMessagesToSend:
-			sendChannel := app.retrieveOutgoingMessageChannelFromEsmeNamed(messageToSendDescriptor.sendFromEsmeNamed)
-			sendChannel <- messageToSendDescriptor
+		case descriptorOfMessageToSend := <-channelOfMessagesToSend:
+			sendChannel := app.retrieveOutgoingMessageChannelFromEsmeNamed(descriptorOfMessageToSend.sendFromEsmeNamed)
+
+			if sendChannel == nil {
+				interactionBroker.notifyOfPduSendAttemptFromUnknownEsme(descriptorOfMessageToSend.sendFromEsmeNamed)
+				continue
+			}
+
+			sendChannel <- descriptorOfMessageToSend
 		}
 	}
 }
@@ -90,5 +112,9 @@ func (app *esmeClusterApplication) mapEsmeNameToItsReceiverChannel(esmeName stri
 }
 
 func (app *esmeClusterApplication) retrieveOutgoingMessageChannelFromEsmeNamed(esmeName string) chan *messageDescriptor {
-	return nil
+	return app.esmeReceiveChannelByEsmeName[esmeName]
+}
+
+func (app *esmeClusterApplication) getIoWriterStreamHandleForFileNamed(fileName string) (io.Writer, error) {
+	return os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY, 0640)
 }
