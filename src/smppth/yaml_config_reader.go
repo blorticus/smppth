@@ -1,7 +1,6 @@
 package smppth
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -67,10 +66,6 @@ func (reader *ApplicationConfigYamlReader) ParseReader(ioReader io.Reader) ([]*E
 
 	if err != nil {
 		return nil, nil, err
-	}
-
-	if len(config.ESMEs) == 0 {
-		return nil, nil, errors.New("No ESMEs defined in source yaml")
 	}
 
 	esmeDefinitionByName := make(map[string]esmeYaml)
