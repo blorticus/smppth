@@ -30,7 +30,7 @@ func TestEsmePeerMessageListener(t *testing.T) {
 		t.Errorf("completeTransceiverBindingTowardPeer() should have Write()n bind-tranceiver, but message type = (%s)", pdu.CommandName())
 	}
 
-	eventMsgChannel := make(chan *EsmeListenerEvent)
+	eventMsgChannel := make(chan *AgentEvent)
 
 	conn.nextReadValue = testSmppMsgEnquireLink01()
 	go connector.startListeningForIncomingMessagesFromPeer(eventMsgChannel)
@@ -50,22 +50,6 @@ func TestEsmePeerMessageListener(t *testing.T) {
 	if eventMessage.SmppPDU.CommandID != smpp.CommandEnquireLink {
 		t.Errorf("On first enquire_link from peer, for received event message, SmppPDU CommandID should be enquire_link, but is (%s)", eventMessage.SmppPDU.CommandName())
 	}
-}
-
-func validateEventMessage(eventMessage *EsmeListenerEvent, expectedType esmeEventType, expectedSenderName string) error {
-	if eventMessage == nil {
-		return fmt.Errorf("expected valid event message, got nil")
-	}
-
-	if eventMessage.Type != ReceivedMessage {
-		return fmt.Errorf("expected Type = %d, got = %d", int(expectedType), int(eventMessage.Type))
-	}
-
-	if eventMessage.NameOfMessageSender != expectedSenderName {
-		return fmt.Errorf("expected nameOfSender = (%s), got = (%s)", expectedSenderName, eventMessage.NameOfMessageSender)
-	}
-
-	return nil
 }
 
 func TestEsmeOneSmscEndpoint(t *testing.T) {
@@ -92,9 +76,9 @@ func TestEsmeOneSmscEndpoint(t *testing.T) {
 		},
 	}
 
-	esmeEventChannel := make(chan *EsmeListenerEvent)
+	esmeEventChannel := make(chan *AgentEvent)
 
-	go esme.StartListening(esmeEventChannel)
+	go esme.StartEventLoop(esmeEventChannel)
 
 	nextEvent := <-esmeEventChannel
 
@@ -102,7 +86,7 @@ func TestEsmeOneSmscEndpoint(t *testing.T) {
 		t.Errorf("For first received event, expected CompletedBind (%d), got (%d)", int(CompletedBind), int(nextEvent.Type))
 	}
 
-	esme.SendMessageToPeer(&MessageDescriptor{SendFromEsmeNamed: "testEsme01", SendToSmscNamed: "testSmsc01", PDU: testSmppPDUEnquireLink01()})
+	esme.SendMessageToPeer(&MessageDescriptor{NameOfSourcePeer: "testEsme01", NameOfRemotePeer: "testSmsc01", PDU: testSmppPDUEnquireLink01()})
 
 	nextEvent = <-esmeEventChannel
 
@@ -110,8 +94,8 @@ func TestEsmeOneSmscEndpoint(t *testing.T) {
 		t.Errorf("For second received event, expected ReceivedMessage (%d), got (%d)", int(ReceivedMessage), int(nextEvent.Type))
 	}
 
-	if nextEvent.NameOfMessageSender != "testSmsc01" {
-		t.Errorf("For second received event, expected nameOfMessageSender = (testSmsc01), got = (%s)", nextEvent.NameOfMessageSender)
+	if nextEvent.RemotePeerName != "testSmsc01" {
+		t.Errorf("For second received event, expected nameOfMessageSender = (testSmsc01), got = (%s)", nextEvent.RemotePeerName)
 	}
 
 	if nextEvent.SmppPDU == nil {

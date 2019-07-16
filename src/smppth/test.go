@@ -1,15 +1,29 @@
 package smppth
 
 import (
+	"fmt"
 	"net"
 	"smpp"
 	"time"
 )
 
+func testSmppMsgBindTransceiver01() []byte {
+	return []byte{
+		0, 0, 0, 0x14, // len = 20
+		0x00, 0, 0, 0x09, // command = bind_transceiver_resp
+		0, 0, 0, 0x00, // status code = 0
+		0, 0, 0, 0x01, // seq number = 1
+		0x66, 0x6f, 0x6f, 0, // systemID = 'foo'
+		0x62, 0x61, 0x72, 0, // password = 'bar'
+		0x66, 0x6f, 0x6f, 0, // systemType = 'boo'
+		0x34, // interface_version
+	}
+}
+
 func testSmppMsgTransceiverResp01() []byte {
 	return []byte{
 		0, 0, 0, 0x14, // len = 20
-		0x80, 0, 0, 0x02, // command = bind_trasceiver_resp
+		0x80, 0, 0, 0x09, // command = bind_trasceiver_resp
 		0, 0, 0, 0x00, // status code = 0
 		0, 0, 0, 0x01, // seq number = 1
 		0x66, 0x6f, 0x6f, 0, // systemID = 'foo'
@@ -146,4 +160,20 @@ func (reader *mockReader) Read(readBuffer []byte) (int, error) {
 	}
 
 	return readLength, nil
+}
+
+func validateEventMessage(eventMessage *AgentEvent, expectedType AgentEventType, expectedSenderName string) error {
+	if eventMessage == nil {
+		return fmt.Errorf("expected valid event message, got nil")
+	}
+
+	if eventMessage.Type != expectedType {
+		return fmt.Errorf("expected Type = %d, got = %d", int(expectedType), int(eventMessage.Type))
+	}
+
+	if eventMessage.RemotePeerName != expectedSenderName {
+		return fmt.Errorf("expected nameOfSender = (%s), got = (%s)", expectedSenderName, eventMessage.RemotePeerName)
+	}
+
+	return nil
 }

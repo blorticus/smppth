@@ -184,7 +184,7 @@ func (broker *InteractionBroker) BeginInteractiveSession() {
 				if err != nil {
 					broker.writeLine(err.Error())
 				} else {
-					broker.channelOfPdusToSend <- &MessageDescriptor{PDU: pdu, SendFromEsmeNamed: sendCommandStruct.pduSenderName, SendToSmscNamed: sendCommandStruct.pduReceiverName}
+					broker.channelOfPdusToSend <- &MessageDescriptor{PDU: pdu, NameOfSourcePeer: sendCommandStruct.pduSenderName, NameOfRemotePeer: sendCommandStruct.pduReceiverName}
 				}
 			} else {
 				broker.writeLine("Command not understood")

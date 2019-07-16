@@ -22,11 +22,11 @@ func main() {
 	esmes, _, err := yamlReader.ParseFile(yamlFileName)
 	app.dieIfError(err)
 
-	esmeEventChannel := make(chan *smppth.EsmeListenerEvent, len(esmes))
+	esmeEventChannel := make(chan *smppth.AgentEvent, len(esmes))
 
 	for _, esme := range esmes {
-		app.mapEsmeNameToItsReceiverChannel(esme.Name, esme.OutgoingMessageChannel())
-		go esme.StartListening(esmeEventChannel)
+		app.rememberEsmeObjectByName(esme.Name(), esme)
+		go esme.StartEventLoop(esmeEventChannel)
 	}
 
 	fileWriterStream, err := app.getIoWriterStreamHandleForFileNamed("foo.out")
@@ -41,27 +41,27 @@ func main() {
 		case event := <-esmeEventChannel:
 			switch event.Type {
 			case smppth.ReceivedMessage:
-				interactionBroker.NotifyThatSmppPduWasReceived(event.SmppPDU, event.SourceEsme.Name, event.NameOfMessageSender)
+				interactionBroker.NotifyThatSmppPduWasReceived(event.SmppPDU, event.SourceEsme.Name(), event.NameOfMessageSender)
 
 			case smppth.CompletedBind:
-				interactionBroker.NotifyThatBindWasCompletedWithPeer(event.SourceEsme.Name, event.BoundPeerName)
+				interactionBroker.NotifyThatBindWasCompletedWithPeer(event.SourceEsme.Name(), event.BoundPeerName)
 			}
 
 		case descriptorOfMessageToSend := <-channelOfMessagesToSend:
-			sendChannel := app.retrieveOutgoingMessageChannelFromEsmeNamed(descriptorOfMessageToSend.SendFromEsmeNamed)
+			esme := app.retrieveEsmeObjectByName(descriptorOfMessageToSend.SendFromEsmeNamed)
 
-			if sendChannel == nil {
+			if esme == nil {
 				interactionBroker.NotifyOfPduSendAttemptFromUnknownEsme(descriptorOfMessageToSend.SendFromEsmeNamed)
 				continue
 			}
 
-			sendChannel <- descriptorOfMessageToSend
+			esme.SendMessageToPeer(descriptorOfMessageToSend)
 		}
 	}
 }
 
 type esmeClusterApplication struct {
-	esmeReceiveChannelByEsmeName map[string]chan *smppth.MessageDescriptor
+	esmeObjectByEsmeName map[string]*smppth.ESME
 }
 
 func newEsmeClusterApplication() *esmeClusterApplication {
@@ -87,12 +87,12 @@ func (app *esmeClusterApplication) syntaxString() string {
 	return fmt.Sprintf("%s <yaml_file>", path.Base(os.Args[0]))
 }
 
-func (app *esmeClusterApplication) mapEsmeNameToItsReceiverChannel(esmeName string, messageChannel chan *smppth.MessageDescriptor) {
-	app.esmeReceiveChannelByEsmeName[esmeName] = messageChannel
+func (app *esmeClusterApplication) rememberEsmeObjectByName(esmeName string, esmeObject *smppth.ESME) {
+	app.esmeObjectByEsmeName[esmeName] = esmeObject
 }
 
-func (app *esmeClusterApplication) retrieveOutgoingMessageChannelFromEsmeNamed(esmeName string) chan *smppth.MessageDescriptor {
-	return app.esmeReceiveChannelByEsmeName[esmeName]
+func (app *esmeClusterApplication) retrieveEsmeObjectByName(esmeName string) *smppth.ESME {
+	return app.esmeObjectByEsmeName[esmeName]
 }
 
 func (app *esmeClusterApplication) getIoWriterStreamHandleForFileNamed(fileName string) (io.Writer, error) {

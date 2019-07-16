@@ -86,17 +86,17 @@ func expectValueOnMockWriter(writer *mockWriter, expectedData []byte) error {
 	return nil
 }
 
-func expectValuesForSendMessageDescriptor(messageDescriptor *MessageDescriptor, expectedSendFromEsmeNamed string, expectedSendToSmscNamed string, expectedPduCommandID smpp.CommandIDType) error {
+func expectValuesForSendMessageDescriptor(messageDescriptor *MessageDescriptor, expectedNameOfSourcePeer string, expectedNameOfRemotePeer string, expectedPduCommandID smpp.CommandIDType) error {
 	if messageDescriptor == nil {
 		return fmt.Errorf("Received messageDescriptor is nil")
 	}
 
-	if messageDescriptor.SendFromEsmeNamed != expectedSendFromEsmeNamed {
-		return fmt.Errorf("Expected SendFromEsmeNamed = (%s), got = (%s)", expectedSendFromEsmeNamed, messageDescriptor.SendFromEsmeNamed)
+	if messageDescriptor.NameOfSourcePeer != expectedNameOfSourcePeer {
+		return fmt.Errorf("Expected NameOfSourcePeer = (%s), got = (%s)", expectedNameOfSourcePeer, messageDescriptor.NameOfSourcePeer)
 	}
 
-	if messageDescriptor.SendToSmscNamed != expectedSendToSmscNamed {
-		return fmt.Errorf("Expected SendToSmscNamed = (%s), got = (%s)", expectedSendToSmscNamed, messageDescriptor.SendToSmscNamed)
+	if messageDescriptor.NameOfRemotePeer != expectedNameOfRemotePeer {
+		return fmt.Errorf("Expected SendToSmscNamed = (%s), got = (%s)", expectedNameOfRemotePeer, messageDescriptor.NameOfRemotePeer)
 	}
 
 	if messageDescriptor.PDU == nil {

@@ -60,7 +60,7 @@ TransceiverBinds:
 
 	if ok, err := compareEsme(esmeList[0],
 		&ESME{
-			Name: "esme-rcs01-tp01",
+			name: "esme-rcs01-tp01",
 			ip:   net.ParseIP("10.1.1.1"),
 			port: uint16(2775),
 			peerBinds: []smppBindInfo{
@@ -87,7 +87,7 @@ TransceiverBinds:
 
 	if ok, err := compareEsme(esmeList[1],
 		&ESME{
-			Name: "esme-rcs01-tp02",
+			name: "esme-rcs01-tp02",
 			ip:   net.ParseIP("10.1.1.2"),
 			port: uint16(2775),
 			peerBinds: []smppBindInfo{
@@ -115,8 +115,8 @@ TransceiverBinds:
 }
 
 func compareEsme(received *ESME, expected *ESME) (bool, error) {
-	if received.Name != expected.Name {
-		return false, fmt.Errorf("Received Name = (%s), expected = (%s)", received.Name, expected.Name)
+	if received.Name() != expected.Name() {
+		return false, fmt.Errorf("Received Name = (%s), expected = (%s)", received.Name(), expected.Name())
 	}
 
 	if !received.ip.Equal(expected.ip) {
