@@ -16,6 +16,7 @@ type ESME struct {
 	peerBinds                        []smppBindInfo
 	connectionToPeerForPeerNamed     map[string]net.Conn
 	channelOfEventsRaisedByThisAgent chan *AgentEvent
+	seqNumberOfNextOutgoingPdu       uint32
 }
 
 // NewEsme creates an SMPP 3.4 client with the given name, and using the given IP and port for outgoing
@@ -28,6 +29,7 @@ func NewEsme(esmeName string, esmeIP net.IP, esmePort uint16) *ESME {
 		peerBinds:                        make([]smppBindInfo, 0, 10),
 		connectionToPeerForPeerNamed:     make(map[string]net.Conn),
 		channelOfEventsRaisedByThisAgent: nil,
+		seqNumberOfNextOutgoingPdu:       1,
 	}
 }
 
@@ -46,6 +48,8 @@ func (esme *ESME) SendMessageToPeer(message *MessageDescriptor) error {
 		return fmt.Errorf("No such SMSC peer named (%s) is known to this ESME", message.NameOfRemotePeer)
 	}
 
+	esme.setSequenceNumberOfPduTowardRemotePeerToLocalSequenceNumber(message.PDU, message.NameOfRemotePeer)
+
 	encodedPDU, err := message.PDU.Encode()
 
 	if err != nil {
@@ -59,6 +63,11 @@ func (esme *ESME) SendMessageToPeer(message *MessageDescriptor) error {
 	}
 
 	return nil
+}
+
+func (esme *ESME) setSequenceNumberOfPduTowardRemotePeerToLocalSequenceNumber(pdu *smpp.PDU, nameOfRemotePeer string) {
+	pdu.SequenceNumber = esme.seqNumberOfNextOutgoingPdu
+	esme.seqNumberOfNextOutgoingPdu++
 }
 
 // StartEventLoop instructs this ESME agent to start listening for incoming transport connections,

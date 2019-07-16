@@ -56,11 +56,20 @@ func main() {
 		select {
 		case event := <-sharedEventChannel:
 			switch event.Type {
-			case smppth.ReceivedMessage:
+			case smppth.ReceivedBind:
 				interactionBroker.NotifyThatSmppPduWasReceived(event.SmppPDU, event.SourceAgent.Name(), event.RemotePeerName)
+
+			case smppth.SentBind:
+				interactionBroker.NotifyThatSmppPduWasSentToPeer(event.SmppPDU, event.SourceAgent.Name(), event.RemotePeerName)
 
 			case smppth.CompletedBind:
 				interactionBroker.NotifyThatBindWasCompletedWithPeer(event.SourceAgent.Name(), event.RemotePeerName)
+
+			case smppth.ReceivedMessage:
+				interactionBroker.NotifyThatSmppPduWasReceived(event.SmppPDU, event.SourceAgent.Name(), event.RemotePeerName)
+
+			case smppth.SentMessage:
+				interactionBroker.NotifyThatSmppPduWasSentToPeer(event.SmppPDU, event.SourceAgent.Name(), event.RemotePeerName)
 			}
 
 		case descriptorOfMessageToSend := <-channelOfMessagesToSend:
@@ -72,6 +81,7 @@ func main() {
 			}
 
 			agent.SendMessageToPeer(descriptorOfMessageToSend)
+			interactionBroker.NotifyThatSmppPduWasSentToPeer(descriptorOfMessageToSend.PDU, descriptorOfMessageToSend.NameOfSourcePeer, descriptorOfMessageToSend.NameOfRemotePeer)
 		}
 	}
 }
