@@ -1,0 +1,24 @@
+---
+SMSCs:
+  - Name: cluster01-smsc01
+    IP: 172.16.1.1
+    Port: 2775
+    BindPassword: passwd1
+    BindSystemID: smsc-01-01
+  - Name: cluster01-smsc02
+    IP: 172.16.1.2
+    Port: 2775
+    BindPassword: passwd1
+    BindSystemID: smsc-01-02
+ESMEs:
+  - Name: rcs01-tp01
+    IP: 192.168.1.1
+    Port: 2775
+    BindSystemID: rcs01-tp01
+    BindSystemType: rcs
+  - Name: rcs01-tp02
+    IP: 192.168.1.2
+    Port: 2775
+    BindSystemID: rcs01-tp02
+    BindSystemType: rcs
+TransceiverBinds:
