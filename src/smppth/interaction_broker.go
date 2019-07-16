@@ -221,9 +221,17 @@ func (broker *InteractionBroker) attemptToMakeEnquireLinkPdu(commandParameterMap
 
 func (broker *InteractionBroker) attemptToMakeSubmitSmPdu(commandParameterMap map[string]string) (*smpp.PDU, error) {
 	shortMessage, shortMessageIsInMap := commandParameterMap["short_message"]
+	destAddr, destAddrIsInMap := commandParameterMap["dest_addr"]
+	destAddrNpi := uint8(0)
 
 	if !shortMessageIsInMap {
 		shortMessage = "Sample Short Message"
+	}
+
+	if !destAddrIsInMap {
+		destAddr = ""
+	} else {
+		destAddrNpi = uint8(9)
 	}
 
 	if len(shortMessage) > 255 {
@@ -231,22 +239,22 @@ func (broker *InteractionBroker) attemptToMakeSubmitSmPdu(commandParameterMap ma
 	}
 
 	return smpp.NewPDU(smpp.CommandSubmitSm, 0, 1, []*smpp.Parameter{
-		smpp.NewFLParameter(uint8(0)),     // service_type
-		smpp.NewFLParameter(uint8(0)),     // source_addr_ton
-		smpp.NewFLParameter(uint8(0)),     // source_addr_npi
-		smpp.NewCOctetStringParameter(""), // source_addr
-		smpp.NewFLParameter(uint8(0)),     // dest_addr_ton
-		smpp.NewFLParameter(uint8(0)),     // dest_addr_npi
-		smpp.NewCOctetStringParameter(""), // destination_addr
-		smpp.NewFLParameter(uint8(0)),     // esm_class
-		smpp.NewFLParameter(uint8(0)),     // protocol_id
-		smpp.NewFLParameter(uint8(0)),     // priority_flag
-		smpp.NewFLParameter(uint8(0)),     // scheduled_delivery_time
-		smpp.NewFLParameter(uint8(0)),     // validity_period
-		smpp.NewFLParameter(uint8(0)),     // registered_delivery
-		smpp.NewFLParameter(uint8(0)),     // replace_if_present_flag
-		smpp.NewFLParameter(uint8(0)),     // data_coding
-		smpp.NewFLParameter(uint8(0)),     // sm_defalt_msg_id
+		smpp.NewFLParameter(uint8(0)),           // service_type
+		smpp.NewFLParameter(uint8(0)),           // source_addr_ton
+		smpp.NewFLParameter(uint8(0)),           // source_addr_npi
+		smpp.NewCOctetStringParameter(""),       // source_addr
+		smpp.NewFLParameter(uint8(0)),           // dest_addr_ton
+		smpp.NewFLParameter(uint8(destAddrNpi)), // dest_addr_npi
+		smpp.NewCOctetStringParameter(destAddr), // destination_addr
+		smpp.NewFLParameter(uint8(0)),           // esm_class
+		smpp.NewFLParameter(uint8(0)),           // protocol_id
+		smpp.NewFLParameter(uint8(0)),           // priority_flag
+		smpp.NewFLParameter(uint8(0)),           // scheduled_delivery_time
+		smpp.NewFLParameter(uint8(0)),           // validity_period
+		smpp.NewFLParameter(uint8(0)),           // registered_delivery
+		smpp.NewFLParameter(uint8(0)),           // replace_if_present_flag
+		smpp.NewFLParameter(uint8(0)),           // data_coding
+		smpp.NewFLParameter(uint8(0)),           // sm_defalt_msg_id
 		smpp.NewFLParameter(uint8(len(shortMessage))),
 		smpp.NewCOctetStringParameter(shortMessage),
 	}, []*smpp.Parameter{}), nil
@@ -298,7 +306,7 @@ func (broker *InteractionBroker) NotifyThatSmppPduWasReceived(pdu *smpp.PDU, nam
 	case smpp.CommandSubmitSm:
 		shortMessageValueInterface := pdu.MandatoryParameters[17].Value
 		shortMessageValue := shortMessageValueInterface.([]byte)
-		broker.outputWriter.Write([]byte(fmt.Sprintf("(%s) received submit-sm from %s, SeqNum=%d, short_message=\"%s\"\n", nameOfReceivingEsme, nameOfRemoteSender, pdu.SequenceNumber, shortMessageValue)))
+		broker.outputWriter.Write([]byte(fmt.Sprintf("(%s) received submit-sm from %s, SeqNum=%d, short_message=\"%s\", dest_addr=(%s)\n", nameOfReceivingEsme, nameOfRemoteSender, pdu.SequenceNumber, shortMessageValue, pdu.MandatoryParameters[6].Value.(string))))
 	case smpp.CommandSubmitSmResp:
 		broker.outputWriter.Write([]byte(fmt.Sprintf("(%s) received submit-sm-resp from %s, SeqNum=%d, message_id=(%s)\n", nameOfReceivingEsme, nameOfRemoteSender, pdu.SequenceNumber, pdu.MandatoryParameters[0].Value.(string))))
 	default:
