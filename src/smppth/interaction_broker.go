@@ -296,7 +296,9 @@ func (broker *InteractionBroker) discardInputUntilNewline() {
 func (broker *InteractionBroker) NotifyThatSmppPduWasReceived(pdu *smpp.PDU, nameOfReceivingEsme string, nameOfRemoteSender string) {
 	switch pdu.CommandID {
 	case smpp.CommandSubmitSm:
-		broker.outputWriter.Write([]byte(fmt.Sprintf("(%s) received submit-sm from %s, SeqNum=%d, short_message=\"%s\"\n", nameOfReceivingEsme, nameOfRemoteSender, pdu.SequenceNumber, pdu.MandatoryParameters[17].Value.(string))))
+		shortMessageValueInterface := pdu.MandatoryParameters[17].Value
+		shortMessageValue := shortMessageValueInterface.([]byte)
+		broker.outputWriter.Write([]byte(fmt.Sprintf("(%s) received submit-sm from %s, SeqNum=%d, short_message=\"%s\"\n", nameOfReceivingEsme, nameOfRemoteSender, pdu.SequenceNumber, shortMessageValue)))
 	default:
 		broker.outputWriter.Write([]byte(fmt.Sprintf("(%s) received %s from %s, SeqNum=%d\n", nameOfReceivingEsme, pdu.CommandName(), nameOfRemoteSender, pdu.SequenceNumber)))
 	}
