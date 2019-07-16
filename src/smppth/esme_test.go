@@ -1,4 +1,4 @@
-package main
+package smppth
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 )
 
 func TestEsmePeerMessageListener(t *testing.T) {
-	esme := &esme{}
+	esme := &ESME{}
 
 	conn := newFakeNetConn()
 
@@ -30,39 +30,39 @@ func TestEsmePeerMessageListener(t *testing.T) {
 		t.Errorf("completeTransceiverBindingTowardPeer() should have Write()n bind-tranceiver, but message type = (%s)", pdu.CommandName())
 	}
 
-	eventMsgChannel := make(chan *esmeListenerEvent)
+	eventMsgChannel := make(chan *EsmeListenerEvent)
 
 	conn.nextReadValue = testSmppMsgEnquireLink01()
 	go connector.startListeningForIncomingMessagesFromPeer(eventMsgChannel)
 
 	eventMessage := <-eventMsgChannel
 
-	validationError := validateEventMessage(eventMessage, receivedMessage, "testSmsc01")
+	validationError := validateEventMessage(eventMessage, ReceivedMessage, "testSmsc01")
 
 	if validationError != nil {
 		t.Errorf("On first enquire_link from peer, for received event message, %s", validationError)
 	}
 
-	if eventMessage.smppPDU == nil {
-		t.Errorf("On first enquire_link from peer, for received event message, smppPDU should not be nil, but is")
+	if eventMessage.SmppPDU == nil {
+		t.Errorf("On first enquire_link from peer, for received event message, SmppPDU should not be nil, but is")
 	}
 
-	if eventMessage.smppPDU.CommandID != smpp.CommandEnquireLink {
-		t.Errorf("On first enquire_link from peer, for received event message, smppPDU CommandID should be enquire_link, but is (%s)", eventMessage.smppPDU.CommandName())
+	if eventMessage.SmppPDU.CommandID != smpp.CommandEnquireLink {
+		t.Errorf("On first enquire_link from peer, for received event message, SmppPDU CommandID should be enquire_link, but is (%s)", eventMessage.SmppPDU.CommandName())
 	}
 }
 
-func validateEventMessage(eventMessage *esmeListenerEvent, expectedType esmeEventType, expectedSenderName string) error {
+func validateEventMessage(eventMessage *EsmeListenerEvent, expectedType esmeEventType, expectedSenderName string) error {
 	if eventMessage == nil {
 		return fmt.Errorf("expected valid event message, got nil")
 	}
 
-	if eventMessage.Type != receivedMessage {
+	if eventMessage.Type != ReceivedMessage {
 		return fmt.Errorf("expected Type = %d, got = %d", int(expectedType), int(eventMessage.Type))
 	}
 
-	if eventMessage.nameOfMessageSender != expectedSenderName {
-		return fmt.Errorf("expected nameOfSender = (%s), got = (%s)", expectedSenderName, eventMessage.nameOfMessageSender)
+	if eventMessage.NameOfMessageSender != expectedSenderName {
+		return fmt.Errorf("expected nameOfSender = (%s), got = (%s)", expectedSenderName, eventMessage.NameOfMessageSender)
 	}
 
 	return nil
@@ -80,7 +80,7 @@ func TestEsmeOneSmscEndpoint(t *testing.T) {
 
 	go smscSimulatedListener(listener)
 
-	esme := newEsme("testEsme01", net.ParseIP("127.0.0.1"), 0)
+	esme := NewEsme("testEsme01", net.ParseIP("127.0.0.1"), 0)
 	esme.peerBinds = []smppBindInfo{
 		smppBindInfo{
 			remoteIP:   net.ParseIP("127.0.0.1"),
@@ -92,33 +92,33 @@ func TestEsmeOneSmscEndpoint(t *testing.T) {
 		},
 	}
 
-	esmeEventChannel := make(chan *esmeListenerEvent)
+	esmeEventChannel := make(chan *EsmeListenerEvent)
 
-	go esme.startListening(esmeEventChannel)
+	go esme.StartListening(esmeEventChannel)
 
 	nextEvent := <-esmeEventChannel
 
-	if nextEvent.Type != completedBind {
-		t.Errorf("For first received event, expected completedBind (%d), got (%d)", int(completedBind), int(nextEvent.Type))
+	if nextEvent.Type != CompletedBind {
+		t.Errorf("For first received event, expected CompletedBind (%d), got (%d)", int(CompletedBind), int(nextEvent.Type))
 	}
 
-	esme.sendMessageToPeer(&messageDescriptor{sendFromEsmeNamed: "testEsme01", sendToSmscNamed: "testSmsc01", pdu: testSmppPDUEnquireLink01()})
+	esme.SendMessageToPeer(&MessageDescriptor{SendFromEsmeNamed: "testEsme01", SendToSmscNamed: "testSmsc01", PDU: testSmppPDUEnquireLink01()})
 
 	nextEvent = <-esmeEventChannel
 
-	if nextEvent.Type != receivedMessage {
-		t.Errorf("For second received event, expected receivedMessage (%d), got (%d)", int(receivedMessage), int(nextEvent.Type))
+	if nextEvent.Type != ReceivedMessage {
+		t.Errorf("For second received event, expected ReceivedMessage (%d), got (%d)", int(ReceivedMessage), int(nextEvent.Type))
 	}
 
-	if nextEvent.nameOfMessageSender != "testSmsc01" {
-		t.Errorf("For second received event, expected nameOfMessageSender = (testSmsc01), got = (%s)", nextEvent.nameOfMessageSender)
+	if nextEvent.NameOfMessageSender != "testSmsc01" {
+		t.Errorf("For second received event, expected nameOfMessageSender = (testSmsc01), got = (%s)", nextEvent.NameOfMessageSender)
 	}
 
-	if nextEvent.smppPDU == nil {
+	if nextEvent.SmppPDU == nil {
 		t.Errorf("For second received event, expect smppPDU not nil, but it is")
 	} else {
-		if nextEvent.smppPDU.CommandID != smpp.CommandEnquireLinkResp {
-			t.Errorf("For second received event, expect enquire-link-response, but got (%s)", nextEvent.smppPDU.CommandName())
+		if nextEvent.SmppPDU.CommandID != smpp.CommandEnquireLinkResp {
+			t.Errorf("For second received event, expect enquire-link-response, but got (%s)", nextEvent.SmppPDU.CommandName())
 		}
 	}
 }

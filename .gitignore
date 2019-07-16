@@ -12,3 +12,4 @@
 *.out
 bin/*
 .vscode/launch.json
+pkg/darwin_amd64/smppth.a

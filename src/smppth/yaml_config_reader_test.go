@@ -1,4 +1,4 @@
-package main
+package smppth
 
 import (
 	"fmt"
@@ -42,9 +42,9 @@ TransceiverBinds:
     SMSC: smsc-cluster02-vs	
 `)
 
-	yamlReader := newApplicationConfigYamlReader()
+	yamlReader := NewApplicationConfigYamlReader()
 
-	esmeList, smscList, err := yamlReader.parseReader(ioReader)
+	esmeList, smscList, err := yamlReader.ParseReader(ioReader)
 
 	if err != nil {
 		t.Errorf("[sample-config.yaml]: on parseReader() received error: %s", err)
@@ -59,8 +59,8 @@ TransceiverBinds:
 	}
 
 	if ok, err := compareEsme(esmeList[0],
-		&esme{
-			name: "esme-rcs01-tp01",
+		&ESME{
+			Name: "esme-rcs01-tp01",
 			ip:   net.ParseIP("10.1.1.1"),
 			port: uint16(2775),
 			peerBinds: []smppBindInfo{
@@ -86,8 +86,8 @@ TransceiverBinds:
 	}
 
 	if ok, err := compareEsme(esmeList[1],
-		&esme{
-			name: "esme-rcs01-tp02",
+		&ESME{
+			Name: "esme-rcs01-tp02",
 			ip:   net.ParseIP("10.1.1.2"),
 			port: uint16(2775),
 			peerBinds: []smppBindInfo{
@@ -114,9 +114,9 @@ TransceiverBinds:
 
 }
 
-func compareEsme(received *esme, expected *esme) (bool, error) {
-	if received.name != expected.name {
-		return false, fmt.Errorf("Received name = (%s), expected = (%s)", received.name, expected.name)
+func compareEsme(received *ESME, expected *ESME) (bool, error) {
+	if received.Name != expected.Name {
+		return false, fmt.Errorf("Received Name = (%s), expected = (%s)", received.Name, expected.Name)
 	}
 
 	if !received.ip.Equal(expected.ip) {

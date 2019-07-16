@@ -1,4 +1,4 @@
-package main
+package smppth
 
 import (
 	"fmt"
@@ -12,10 +12,10 @@ func TestBasicInteraction(t *testing.T) {
 	outputWriter := newMockWriter("output")
 	inputReader := newMockReader("input")
 
-	broker := newInteractionBroker().setInputPromptStream(promptWriter).setInputReader(inputReader).setOutputWriter(outputWriter)
-	msgSendChannel := broker.retrieveSendMessageChannel()
+	broker := NewInteractionBroker().SetInputPromptStream(promptWriter).SetInputReader(inputReader).SetOutputWriter(outputWriter)
+	msgSendChannel := broker.RetrieveSendMessageChannel()
 
-	go broker.beginInteractiveSession()
+	go broker.BeginInteractiveSession()
 
 	err := expectValueOnMockWriter(promptWriter, []byte("> "))
 
@@ -49,8 +49,8 @@ func TestBasicInteraction(t *testing.T) {
 		t.Errorf("[2] For received messageDescriptor: %s", err)
 	}
 
-	if string(nextSendMessageDescritor.pdu.MandatoryParameters[17].Value.(string)) != "This is a test" {
-		t.Errorf("[2] For received PDU, expected short_message = (This is a test), got = (%s)", string(nextSendMessageDescritor.pdu.MandatoryParameters[17].Value.(string)))
+	if string(nextSendMessageDescritor.PDU.MandatoryParameters[17].Value.(string)) != "This is a test" {
+		t.Errorf("[2] For received PDU, expected short_message = (This is a test), got = (%s)", string(nextSendMessageDescritor.PDU.MandatoryParameters[17].Value.(string)))
 	}
 }
 
@@ -86,25 +86,25 @@ func expectValueOnMockWriter(writer *mockWriter, expectedData []byte) error {
 	return nil
 }
 
-func expectValuesForSendMessageDescriptor(messageDescriptor *messageDescriptor, expectedSendFromEsmeNamed string, expectedSendToSmscNamed string, expectedPduCommandID smpp.CommandIDType) error {
+func expectValuesForSendMessageDescriptor(messageDescriptor *MessageDescriptor, expectedSendFromEsmeNamed string, expectedSendToSmscNamed string, expectedPduCommandID smpp.CommandIDType) error {
 	if messageDescriptor == nil {
 		return fmt.Errorf("Received messageDescriptor is nil")
 	}
 
-	if messageDescriptor.sendFromEsmeNamed != expectedSendFromEsmeNamed {
-		return fmt.Errorf("Expected sendFromEsmeNamed = (%s), got = (%s)", expectedSendFromEsmeNamed, messageDescriptor.sendFromEsmeNamed)
+	if messageDescriptor.SendFromEsmeNamed != expectedSendFromEsmeNamed {
+		return fmt.Errorf("Expected SendFromEsmeNamed = (%s), got = (%s)", expectedSendFromEsmeNamed, messageDescriptor.SendFromEsmeNamed)
 	}
 
-	if messageDescriptor.sendToSmscNamed != expectedSendToSmscNamed {
-		return fmt.Errorf("Expected sendToSmscNamed = (%s), got = (%s)", expectedSendToSmscNamed, messageDescriptor.sendToSmscNamed)
+	if messageDescriptor.SendToSmscNamed != expectedSendToSmscNamed {
+		return fmt.Errorf("Expected SendToSmscNamed = (%s), got = (%s)", expectedSendToSmscNamed, messageDescriptor.SendToSmscNamed)
 	}
 
-	if messageDescriptor.pdu == nil {
+	if messageDescriptor.PDU == nil {
 		return fmt.Errorf("messageDescriptor contains nil PDU value")
 	}
 
-	if messageDescriptor.pdu.CommandID != expectedPduCommandID {
-		return fmt.Errorf("Expected PDU commandID = (%s), got (%s)", smpp.CommandName(expectedPduCommandID), messageDescriptor.pdu.CommandName())
+	if messageDescriptor.PDU.CommandID != expectedPduCommandID {
+		return fmt.Errorf("Expected PDU commandID = (%s), got (%s)", smpp.CommandName(expectedPduCommandID), messageDescriptor.PDU.CommandName())
 	}
 
 	return nil

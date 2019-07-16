@@ -1,4 +1,4 @@
-package main
+package smppth
 
 import (
 	"errors"
@@ -36,14 +36,17 @@ type transceiverBindYaml struct {
 	SmscName string `yaml:"SMSC"`
 }
 
-type applicationConfigYamlReader struct {
+// ApplicationConfigYamlReader reads a testharness application YAML config file
+type ApplicationConfigYamlReader struct {
 }
 
-func newApplicationConfigYamlReader() *applicationConfigYamlReader {
-	return &applicationConfigYamlReader{}
+// NewApplicationConfigYamlReader creates a new, empty ApplicationConfigYamlReader
+func NewApplicationConfigYamlReader() *ApplicationConfigYamlReader {
+	return &ApplicationConfigYamlReader{}
 }
 
-func (reader *applicationConfigYamlReader) parseFile(fileName string) ([]*esme, []*smsc, error) {
+// ParseFile opens a file and treats its contents as a validly formatted testharness config YAML file
+func (reader *ApplicationConfigYamlReader) ParseFile(fileName string) ([]*ESME, []*SMSC, error) {
 	yamlFileHandle, err := os.Open(fileName)
 	defer yamlFileHandle.Close()
 
@@ -51,10 +54,12 @@ func (reader *applicationConfigYamlReader) parseFile(fileName string) ([]*esme, 
 		return nil, nil, err
 	}
 
-	return reader.parseReader(yamlFileHandle)
+	return reader.ParseReader(yamlFileHandle)
 }
 
-func (reader *applicationConfigYamlReader) parseReader(ioReader io.Reader) ([]*esme, []*smsc, error) {
+// ParseReader reads from an io.Reader stream, treating the contents provided as a validly formatted
+// testharness config YAML file
+func (reader *ApplicationConfigYamlReader) ParseReader(ioReader io.Reader) ([]*ESME, []*SMSC, error) {
 	var config applicationConfig
 	decoder := yaml.NewDecoder(ioReader)
 	err := decoder.Decode(&config)
@@ -70,9 +75,9 @@ func (reader *applicationConfigYamlReader) parseReader(ioReader io.Reader) ([]*e
 	esmeDefinitionByName := make(map[string]esmeYaml)
 	smscDefinitionByName := make(map[string]smscYaml)
 
-	esmeObjectByName := make(map[string]*esme)
-	smscObjectList := make([]*smsc, len(config.SMSCs))
-	esmeObjectList := make([]*esme, len(config.ESMEs))
+	esmeObjectByName := make(map[string]*ESME)
+	smscObjectList := make([]*SMSC, len(config.SMSCs))
+	esmeObjectList := make([]*ESME, len(config.ESMEs))
 
 	for i, esmeDefinition := range config.ESMEs {
 		bindIP := net.ParseIP(esmeDefinition.IP)
@@ -82,7 +87,7 @@ func (reader *applicationConfigYamlReader) parseReader(ioReader io.Reader) ([]*e
 		}
 
 		esmeDefinitionByName[esmeDefinition.Name] = esmeDefinition
-		esme := newEsme(esmeDefinition.Name, bindIP, esmeDefinition.Port)
+		esme := NewEsme(esmeDefinition.Name, bindIP, esmeDefinition.Port)
 		esmeObjectByName[esmeDefinition.Name] = esme
 		esmeObjectList[i] = esme
 	}
@@ -95,7 +100,7 @@ func (reader *applicationConfigYamlReader) parseReader(ioReader io.Reader) ([]*e
 		}
 
 		smscDefinitionByName[smscDefinition.Name] = smscDefinition
-		smscObjectList[i] = &smsc{name: smscDefinition.Name, ip: bindIP, port: smscDefinition.Port}
+		smscObjectList[i] = &SMSC{name: smscDefinition.Name, ip: bindIP, port: smscDefinition.Port}
 	}
 
 	for _, bindDefinition := range config.TransceiverBinds {
@@ -124,9 +129,4 @@ func (reader *applicationConfigYamlReader) parseReader(ioReader io.Reader) ([]*e
 	}
 
 	return esmeObjectList, smscObjectList, nil
-}
-
-func (reader *applicationConfigYamlReader) extractEmseObjectsFromConfigObject(config *applicationConfig) (*esme, error) {
-
-	return nil, nil
 }

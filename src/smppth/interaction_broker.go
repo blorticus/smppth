@@ -1,4 +1,4 @@
-package main
+package smppth
 
 import (
 	"fmt"
@@ -110,8 +110,10 @@ func (matcher *interactionBrokerCommandMatcher) saysThatSendCommandParametersCon
 	return matcher.lastSendCommandParameterSetIncludedShortMessage
 }
 
-type interactionBroker struct {
-	channelOfPdusToSend chan *messageDescriptor
+// InteractionBroker connects to a reader, which accepts structured command messages, and a writer,
+// which emits events on behalf of testharness agents that have been started.
+type InteractionBroker struct {
+	channelOfPdusToSend chan *MessageDescriptor
 	outputWriter        io.Writer
 	inputReader         io.Reader
 	inputPromptStream   io.Writer
@@ -120,9 +122,11 @@ type interactionBroker struct {
 	commandMatcher      *interactionBrokerCommandMatcher
 }
 
-func newInteractionBroker() *interactionBroker {
-	return &interactionBroker{
-		channelOfPdusToSend: make(chan *messageDescriptor),
+// NewInteractionBroker creates an empty broker, where the prompt output stream is set to STDOUT,
+// the command input stream is set to STDIN, and the event output writer is set to STDOUT.
+func NewInteractionBroker() *InteractionBroker {
+	return &InteractionBroker{
+		channelOfPdusToSend: make(chan *MessageDescriptor),
 		outputWriter:        os.Stdout,
 		inputReader:         os.Stdin,
 		inputPromptStream:   os.Stdout,
@@ -131,33 +135,45 @@ func newInteractionBroker() *interactionBroker {
 	}
 }
 
-func (broker *interactionBroker) setInputReader(reader io.Reader) *interactionBroker {
+// SetInputReader sets the command input reader for the broker, and returns the broker so that
+// this can be chained with other broker Set... commands.
+func (broker *InteractionBroker) SetInputReader(reader io.Reader) *InteractionBroker {
 	broker.inputReader = reader
 	return broker
 }
 
-func (broker *interactionBroker) setInputPromptStream(writer io.Writer) *interactionBroker {
+// SetInputPromptStream sets the command prompt output stream for the broker, and returns the broker so that
+// this can be chained with other broker Set... commands.
+func (broker *InteractionBroker) SetInputPromptStream(writer io.Writer) *InteractionBroker {
 	broker.inputPromptStream = writer
 	return broker
 }
 
-func (broker *interactionBroker) setOutputWriter(writer io.Writer) *interactionBroker {
+// SetOutputWriter sets the command event output stream for the broker, and returns the broker so that
+// this can be chained with other broker Set... commands.
+func (broker *InteractionBroker) SetOutputWriter(writer io.Writer) *InteractionBroker {
 	broker.outputWriter = writer
 	return broker
 }
 
-func (broker *interactionBroker) retrieveSendMessageChannel() <-chan *messageDescriptor {
+// RetrieveSendMessageChannel returns the MessageDescriptor channel, which is used by the broker
+// to accept MessageDescriptors.  These are routed to the appropriate testharness agents based
+// on the MessageDescriptor fields.
+func (broker *InteractionBroker) RetrieveSendMessageChannel() <-chan *MessageDescriptor {
 	return broker.channelOfPdusToSend
 }
 
-func (broker *interactionBroker) beginInteractiveSession() {
+// BeginInteractiveSession instructs the broker to send the prompt to the prompt output stream,
+// wait for a command on the command input stream, attempt to execute the command, and send any
+// results to the event output stream.  This cycle (prompt, read, write) is repeated indefinitely.
+func (broker *InteractionBroker) BeginInteractiveSession() {
 	broker.commandMatcher = newInteractionBrokerCommandMatcher()
 
 	for {
 		nextCommand := broker.promptForNextCommand()
 
 		if nextCommand == "help" {
-			broker.writeOutHelp()
+			broker.WriteOutHelp()
 		} else {
 			broker.commandMatcher.digestCommand(nextCommand)
 			if broker.commandMatcher.saysThisIsAValidSendCommand() {
@@ -168,7 +184,7 @@ func (broker *interactionBroker) beginInteractiveSession() {
 				if err != nil {
 					broker.writeLine(err.Error())
 				} else {
-					broker.channelOfPdusToSend <- &messageDescriptor{pdu: pdu, sendFromEsmeNamed: sendCommandStruct.pduSenderName, sendToSmscNamed: sendCommandStruct.pduReceiverName}
+					broker.channelOfPdusToSend <- &MessageDescriptor{PDU: pdu, SendFromEsmeNamed: sendCommandStruct.pduSenderName, SendToSmscNamed: sendCommandStruct.pduReceiverName}
 				}
 			} else {
 				broker.writeLine("Command not understood")
@@ -177,7 +193,7 @@ func (broker *interactionBroker) beginInteractiveSession() {
 	}
 }
 
-func (broker *interactionBroker) createPduFromCommand(commandDetails *interactionBrokerSendCommand) (*smpp.PDU, error) {
+func (broker *InteractionBroker) createPduFromCommand(commandDetails *interactionBrokerSendCommand) (*smpp.PDU, error) {
 	commandID, commandIDIsUnderstood := smpp.CommandIDFromString(commandDetails.commandTypeName)
 
 	if !commandIDIsUnderstood {
@@ -195,7 +211,7 @@ func (broker *interactionBroker) createPduFromCommand(commandDetails *interactio
 	}
 }
 
-func (broker *interactionBroker) attemptToMakeEnquireLinkPdu(commandParameterMap map[string]string) (*smpp.PDU, error) {
+func (broker *InteractionBroker) attemptToMakeEnquireLinkPdu(commandParameterMap map[string]string) (*smpp.PDU, error) {
 	if len(commandParameterMap) > 0 {
 		return nil, fmt.Errorf("When sending an enquire-link PDU, no additional parameters are allowed")
 	}
@@ -203,7 +219,7 @@ func (broker *interactionBroker) attemptToMakeEnquireLinkPdu(commandParameterMap
 	return smpp.NewPDU(smpp.CommandEnquireLink, 0, 1, []*smpp.Parameter{}, []*smpp.Parameter{}), nil
 }
 
-func (broker *interactionBroker) attemptToMakeSubmitSmPdu(commandParameterMap map[string]string) (*smpp.PDU, error) {
+func (broker *InteractionBroker) attemptToMakeSubmitSmPdu(commandParameterMap map[string]string) (*smpp.PDU, error) {
 	shortMessage, shortMessageIsInMap := commandParameterMap["short_message"]
 
 	if !shortMessageIsInMap {
@@ -236,7 +252,7 @@ func (broker *interactionBroker) attemptToMakeSubmitSmPdu(commandParameterMap ma
 	}, []*smpp.Parameter{}), nil
 }
 
-func (broker *interactionBroker) promptForNextCommand() string {
+func (broker *InteractionBroker) promptForNextCommand() string {
 	if broker.inputPromptStream != nil {
 		broker.inputPromptStream.Write([]byte(broker.promptString))
 	}
@@ -253,28 +269,31 @@ func (broker *interactionBroker) promptForNextCommand() string {
 	return strings.TrimRight(string(input), "\n")
 }
 
-func (broker *interactionBroker) read() string {
+func (broker *InteractionBroker) read() string {
 	bytesRead, err := broker.inputReader.Read(broker.inputByteStream)
 	broker.panicIfError(err)
 
 	return string(broker.inputByteStream[:bytesRead])
 }
 
-func (broker *interactionBroker) write(outputString string) {
+func (broker *InteractionBroker) write(outputString string) {
 	_, err := broker.outputWriter.Write([]byte(outputString))
 	broker.panicIfError(err)
 }
 
-func (broker *interactionBroker) writeLine(outputString string) {
+func (broker *InteractionBroker) writeLine(outputString string) {
 	broker.write(outputString)
 	broker.write("\n")
 }
 
-func (broker *interactionBroker) discardInputUntilNewline() {
+func (broker *InteractionBroker) discardInputUntilNewline() {
 	for input := broker.read(); input[len(input)-1] != byte('\n'); {
 	}
 }
-func (broker *interactionBroker) notifyThatSmppPduWasReceived(pdu *smpp.PDU, nameOfReceivingEsme string, nameOfRemoteSender string) {
+
+// NotifyThatSmppPduWasReceived instructs the broker to write an output event message indicating that an SMPP PDU was received
+// from a peer.  The message type, sequence number, and -- depending on the message type -- other attributes are ouput
+func (broker *InteractionBroker) NotifyThatSmppPduWasReceived(pdu *smpp.PDU, nameOfReceivingEsme string, nameOfRemoteSender string) {
 	switch pdu.CommandID {
 	case smpp.CommandSubmitSm:
 		broker.outputWriter.Write([]byte(fmt.Sprintf("(%s) received submit-sm from %s, SeqNum=%d, short_message=\"%s\"\n", nameOfReceivingEsme, nameOfRemoteSender, pdu.SequenceNumber, pdu.MandatoryParameters[17].Value.(string))))
@@ -283,15 +302,21 @@ func (broker *interactionBroker) notifyThatSmppPduWasReceived(pdu *smpp.PDU, nam
 	}
 }
 
-func (broker *interactionBroker) notifyThatBindWasCompletedWithPeer(nameOfBindingEsme string, nameOfBoundPeer string) {
+// NotifyThatBindWasCompletedWithPeer instructs the broker to write an output event message indicating that a bind was completed
+// with a remote peer.  The name of the peer with which the bind was completed is included in the output.
+func (broker *InteractionBroker) NotifyThatBindWasCompletedWithPeer(nameOfBindingEsme string, nameOfBoundPeer string) {
 	broker.outputWriter.Write([]byte(fmt.Sprintf("(%s) completed transceiver-bind with %s\n", nameOfBindingEsme, nameOfBoundPeer)))
 }
 
-func (broker *interactionBroker) notifyOfPduSendAttemptFromUnknownEsme(nameOfNonExistantEsme string) {
+// NotifyOfPduSendAttemptFromUnknownEsme instructs the broker to write an output event message error, indicating that an attempt
+// was made to send a message to a peer that is unknown to the receiving testharness agent.
+func (broker *InteractionBroker) NotifyOfPduSendAttemptFromUnknownEsme(nameOfNonExistantEsme string) {
 	broker.outputWriter.Write([]byte(fmt.Sprintf("[ERROR] Attempt to send message from unknown ESME named (%s)", nameOfNonExistantEsme)))
 }
 
-func (broker *interactionBroker) writeOutHelp() {
+// WriteOutHelp instructs the broker to write an output event message listing the various possible input commands and their
+// parameters.
+func (broker *InteractionBroker) WriteOutHelp() {
 	helpText := `
 $esme_name: send submit-sm to $smsc_name short_message="$message"
 $esme_name: send enquire-link to $smsc_name
@@ -299,7 +324,7 @@ $esme_name: send enquire-link to $smsc_name
 	broker.outputWriter.Write([]byte(helpText))
 }
 
-func (broker *interactionBroker) panicIfError(err error) {
+func (broker *InteractionBroker) panicIfError(err error) {
 	if err != nil {
 		panic(err)
 	}
