@@ -299,6 +299,8 @@ func (broker *InteractionBroker) NotifyThatSmppPduWasReceived(pdu *smpp.PDU, nam
 		shortMessageValueInterface := pdu.MandatoryParameters[17].Value
 		shortMessageValue := shortMessageValueInterface.([]byte)
 		broker.outputWriter.Write([]byte(fmt.Sprintf("(%s) received submit-sm from %s, SeqNum=%d, short_message=\"%s\"\n", nameOfReceivingEsme, nameOfRemoteSender, pdu.SequenceNumber, shortMessageValue)))
+	case smpp.CommandSubmitSmResp:
+		broker.outputWriter.Write([]byte(fmt.Sprintf("(%s) received submit-sm-resp from %s, SeqNum=%d, message_id=(%s)\n", nameOfReceivingEsme, nameOfRemoteSender, pdu.SequenceNumber, pdu.MandatoryParameters[0].Value.(string))))
 	default:
 		broker.outputWriter.Write([]byte(fmt.Sprintf("(%s) received %s from %s, SeqNum=%d\n", nameOfReceivingEsme, pdu.CommandName(), nameOfRemoteSender, pdu.SequenceNumber)))
 	}
@@ -313,7 +315,7 @@ func (broker *InteractionBroker) NotifyThatBindWasCompletedWithPeer(nameOfBindin
 // NotifyThatSmppPduWasSentToPeer instructs the broker to write an output event message indicating that a local agent successfully sent a message to
 // a remote peer
 func (broker *InteractionBroker) NotifyThatSmppPduWasSentToPeer(pduSentToPeer *smpp.PDU, nameOfSendingPeer string, nameOfReceivingPeer string) {
-	broker.outputWriter.Write([]byte(fmt.Sprintf("(%s) sent %s to %s\n", nameOfSendingPeer, pduSentToPeer.CommandName(), nameOfReceivingPeer)))
+	broker.outputWriter.Write([]byte(fmt.Sprintf("(%s) sent %s to %s, seqNum=(%d)\n", nameOfSendingPeer, pduSentToPeer.CommandName(), nameOfReceivingPeer, pduSentToPeer.SequenceNumber)))
 }
 
 // NotifyThatErrorOccurredWhileTryingToSendMessage instructs the broker to write an output event message indicating an attempt to send a message

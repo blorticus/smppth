@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"smpp"
+	"sync"
 )
 
 // SMSC represents an SMPP 3.4 server, which accepts one or more transport connections and responds
@@ -12,7 +13,7 @@ type SMSC struct {
 	name                                      string
 	ip                                        net.IP
 	port                                      uint16
-	mapOfHandlerForRemotePeerByRemotePeerName map[string]*smscPeerMessageHandler
+	mapOfHandlerForRemotePeerByRemotePeerName sync.Map
 	assertedSystemID                          string
 }
 
@@ -27,7 +28,6 @@ func NewSMSC(smscName string, smscBindSystemID string, listeningIP net.IP, liste
 		ip:               listeningIP,
 		port:             listeningPort,
 		assertedSystemID: smscBindSystemID,
-		mapOfHandlerForRemotePeerByRemotePeerName: make(map[string]*smscPeerMessageHandler),
 	}
 }
 
@@ -40,13 +40,13 @@ func (smsc *SMSC) Name() string {
 // MessageDescriptor.  No effort is made to validate that the MessageDescriptor SourceAgentName
 // matches this agent's name.
 func (smsc *SMSC) SendMessageToPeer(message *MessageDescriptor) error {
-	peerHandler := smsc.mapOfHandlerForRemotePeerByRemotePeerName[message.NameOfRemotePeer]
+	peerHandler, peerHandlerIsInMap := smsc.mapOfHandlerForRemotePeerByRemotePeerName.Load(message.NameOfRemotePeer)
 
-	if peerHandler == nil {
+	if !peerHandlerIsInMap {
 		return fmt.Errorf("This Agent is not bound to a peer named (%s)", message.NameOfRemotePeer)
 	}
 
-	return peerHandler.sendSmppPduToPeer(message.PDU)
+	return peerHandler.(*smscPeerMessageHandler).sendSmppPduToPeer(message.PDU)
 }
 
 // StartEventLoop instructs this SMSC agent to start listening for incoming transport connections,
@@ -66,7 +66,7 @@ func (smsc *SMSC) StartEventLoop(agentEventChannel chan<- *AgentEvent) {
 }
 
 func (smsc *SMSC) notifySmscOfThisHandlersPeerName(peerNameAssertedInBindRequest string, handler *smscPeerMessageHandler) {
-	smsc.mapOfHandlerForRemotePeerByRemotePeerName[peerNameAssertedInBindRequest] = handler
+	smsc.mapOfHandlerForRemotePeerByRemotePeerName.Store(peerNameAssertedInBindRequest, handler)
 }
 
 func (smsc *SMSC) panicIfError(err error) {

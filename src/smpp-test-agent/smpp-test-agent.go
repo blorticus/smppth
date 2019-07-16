@@ -156,7 +156,7 @@ func (app *smppTestAgentApplication) thinksItShouldResponseToReceivedPdu(receive
 	case smpp.CommandEnquireLink:
 		return true
 	case smpp.CommandSubmitSm:
-		return false
+		return true
 	default:
 		return false
 	}
@@ -179,7 +179,7 @@ func (app *smppTestAgentApplication) generateEnquireLinkRespForRequest(receivedP
 
 func (app *smppTestAgentApplication) generateSubmitSmRespForRequest(receivedPdu *smpp.PDU, nameOfPeerThatSentPdu string, nameOfPeerThatReceivedPdu string) (responsePdu *smpp.PDU) {
 	return smpp.NewPDU(smpp.CommandSubmitSmResp, 0, receivedPdu.SequenceNumber, []*smpp.Parameter{
-		smpp.NewCOctetStringParameter(fmt.Sprintf("messageid:%s", nameOfPeerThatReceivedPdu)),
+		smpp.NewCOctetStringParameter(fmt.Sprintf("%s", nameOfPeerThatReceivedPdu)),
 	}, []*smpp.Parameter{})
 }
 
