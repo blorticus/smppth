@@ -20,7 +20,6 @@ type interactionBrokerCommandMatcher struct {
 	digestingCommand                                string
 	sendCommandMatcher                              *regexp.Regexp
 	sendCommandParametersMatcher                    *regexp.Regexp
-	onlyWhitespaceMatcher                           *regexp.Regexp
 	emptyParameterMatcher                           *regexp.Regexp
 	emptyLastParameterMatcher                       *regexp.Regexp
 	doubleQuotedParameterMatcher                    *regexp.Regexp
@@ -32,14 +31,16 @@ type interactionBrokerCommandMatcher struct {
 
 func newInteractionBrokerCommandMatcher() *interactionBrokerCommandMatcher {
 	return &interactionBrokerCommandMatcher{
-		sendCommandMatcher:           regexp.MustCompile(`^(\S+?): send (\S+) to (\S+) *(.*)?$`),
-		sendCommandParametersMatcher: regexp.MustCompile(`^ *short_message="(.+?)" *$`),
-		onlyWhitespaceMatcher:        regexp.MustCompile(`^\s*$`),
-		emptyParameterMatcher:        regexp.MustCompile(`^(\S+)=\s+`),
-		emptyLastParameterMatcher:    regexp.MustCompile(`^(\S+)=$`),
-		doubleQuotedParameterMatcher: regexp.MustCompile(`^(\S+)="(.+?)"\s*`),
-		singleQuotedParameterMatcher: regexp.MustCompile(`^(\S+)='(.+?)'\s*`),
-		unquotedParameterMatcher:     regexp.MustCompile(`^(\S+)=(\S+)\s*`),
+		digestingCommand:                                "",
+		sendCommandMatcher:                              regexp.MustCompile(`^(\S+?): send (\S+) to (\S+) *(.*)?$`),
+		sendCommandParametersMatcher:                    regexp.MustCompile(`^ *short_message="(.+?)" *$`),
+		emptyParameterMatcher:                           regexp.MustCompile(`^(\S+)=\s+`),
+		emptyLastParameterMatcher:                       regexp.MustCompile(`^(\S+)=$`),
+		doubleQuotedParameterMatcher:                    regexp.MustCompile(`^(\S+)="(.+?)"\s*`),
+		singleQuotedParameterMatcher:                    regexp.MustCompile(`^(\S+)='(.+?)'\s*`),
+		unquotedParameterMatcher:                        regexp.MustCompile(`^(\S+)=(\S+)\s*`),
+		lastMatchStringSet:                              []string{},
+		lastSendCommandParameterSetIncludedShortMessage: false,
 	}
 }
 
@@ -103,24 +104,6 @@ func (matcher *interactionBrokerCommandMatcher) extractMappableValueAndMatchingL
 	}
 
 	return true, groups[1], groups[2], len(groups[0])
-}
-
-func (matcher *interactionBrokerCommandMatcher) extractSendCommandParamtersFromParameterString(parameterString string) (shortMessage string, err error) {
-	matchingGroups := matcher.sendCommandParametersMatcher.FindStringSubmatch(parameterString)
-
-	if matchingGroups == nil {
-		matcher.lastSendCommandParameterSetIncludedShortMessage = false
-
-		if !matcher.onlyWhitespaceMatcher.MatchString(parameterString) {
-			return "", fmt.Errorf("Unknown parameters provided to set command")
-		}
-
-		return "", nil
-	}
-
-	matcher.lastSendCommandParameterSetIncludedShortMessage = true
-
-	return matchingGroups[1], nil
 }
 
 func (matcher *interactionBrokerCommandMatcher) saysThatSendCommandParametersContainedShortMessage() bool {
@@ -249,7 +232,7 @@ func (broker *interactionBroker) attemptToMakeSubmitSmPdu(commandParameterMap ma
 		smpp.NewFLParameter(uint8(0)),     // data_coding
 		smpp.NewFLParameter(uint8(0)),     // sm_defalt_msg_id
 		smpp.NewFLParameter(uint8(len(shortMessage))),
-		smpp.NewOctetStringFromString(shortMessage),
+		smpp.NewCOctetStringParameter(shortMessage),
 	}, []*smpp.Parameter{}), nil
 }
 

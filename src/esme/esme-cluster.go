@@ -6,48 +6,20 @@ import (
 	"io"
 	"os"
 	"path"
-	"smpp"
 )
-
-type outputter struct {
-}
-
-func newOutputter() *outputter {
-	return &outputter{}
-}
-
-func (outputter *outputter) sayThatMessageWasReceived(message *smpp.PDU, nameOfSender string) {
-
-}
-
-func (outputter *outputter) sayThatBindWasCompletedWithPeer(nameOfBoundPeer string) {
-
-}
-
-func (outputter *outputter) sayThatYouTriedToSendMessageFromUnknownEsme(nameOfEsme string) {
-
-}
-
-func (outputter *outputter) dieIfError(err error) {
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
-		os.Exit(1)
-	}
-}
 
 // esme-cluster <yaml_file>
 //
 func main() {
 	app := newEsmeClusterApplication()
-	outputter := newOutputter()
 
 	yamlFileName, err := app.parseCommandLine()
-	outputter.dieIfError(err)
+	app.dieIfError(err)
 
 	yamlReader := newApplicationConfigYamlReader()
 
 	esmes, _, err := yamlReader.parseFile(yamlFileName)
-	outputter.dieIfError(err)
+	app.dieIfError(err)
 
 	esmeEventChannel := make(chan *esmeListenerEvent, len(esmes))
 
@@ -57,7 +29,7 @@ func main() {
 	}
 
 	fileWriterStream, err := app.getIoWriterStreamHandleForFileNamed("foo.out")
-	outputter.dieIfError(err)
+	app.dieIfError(err)
 
 	interactionBroker := newInteractionBroker().setInputPromptStream(os.Stdout).setInputReader(os.Stdin).setOutputWriter(fileWriterStream)
 	channelOfMessagesToSend := interactionBroker.retrieveSendMessageChannel()
@@ -93,6 +65,13 @@ type esmeClusterApplication struct {
 
 func newEsmeClusterApplication() *esmeClusterApplication {
 	return &esmeClusterApplication{}
+}
+
+func (app *esmeClusterApplication) dieIfError(err error) {
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	}
 }
 
 func (app *esmeClusterApplication) parseCommandLine() (string, error) {

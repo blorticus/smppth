@@ -95,64 +95,55 @@ func (conn *fakeNetConn) SetWriteDeadline(t time.Time) error {
 type mockWriterOnWriteCallbackFunc func(bytesWritten []byte, writeLength int, err error)
 
 type mockWriter struct {
-	writesSinceLastClear [][]byte
-	onWriteCallback      mockWriterOnWriteCallbackFunc
+	channelOfWrittenData chan []byte
+	dontBlockOnNextWrite bool
+	name                 string
 }
 
-func newMockWriter() *mockWriter {
-	return &mockWriter{writesSinceLastClear: [][]byte{}, onWriteCallback: nil}
+func newMockWriter(writerName string) *mockWriter {
+	return &mockWriter{channelOfWrittenData: make(chan []byte), dontBlockOnNextWrite: false, name: writerName}
 }
 
 func (writer *mockWriter) Write(bytesToWrite []byte) (int, error) {
-	writer.writesSinceLastClear = append(writer.writesSinceLastClear, bytesToWrite)
-
-	if writer.onWriteCallback != nil {
-		writer.onWriteCallback(bytesToWrite, len(bytesToWrite), nil)
-	}
-
+	writer.channelOfWrittenData <- bytesToWrite
 	return len(bytesToWrite), nil
 }
 
-func (writer *mockWriter) getLastWrittenValues() [][]byte {
-	return writer.writesSinceLastClear
-}
-
-func (writer *mockWriter) clearStoresWrites() {
-	writer.writesSinceLastClear = [][]byte{}
-}
-
-func (writer *mockWriter) setOnWriteCallback(callback mockWriterOnWriteCallbackFunc) {
-	writer.onWriteCallback = callback
-}
-
-func (writer *mockWriter) clearOnWriteCallback() {
-	writer.onWriteCallback = nil
+func (writer *mockWriter) ignoreNextWrite() {
+	<-writer.channelOfWrittenData
 }
 
 type mockReader struct {
-	nextReadValue []byte
+	channelOfDataToRead      chan []byte
+	leftOverDataFromLastRead []byte
+	name                     string
 }
 
-func newMockReader() *mockReader {
-	return &mockReader{nextReadValue: []byte{}}
+func newMockReader(readerName string) *mockReader {
+	return &mockReader{channelOfDataToRead: make(chan []byte), leftOverDataFromLastRead: []byte{}, name: readerName}
 }
 
 func (reader *mockReader) setNextReadValue(nextReadValue []byte) {
-	reader.nextReadValue = nextReadValue[:]
+	reader.channelOfDataToRead <- nextReadValue
 }
 
 func (reader *mockReader) Read(readBuffer []byte) (int, error) {
-	readLength := 0
-	if len(readBuffer) < len(reader.nextReadValue) {
-		copy(readBuffer, reader.nextReadValue[:len(readBuffer)])
-		reader.nextReadValue = reader.nextReadValue[len(readBuffer):]
-		readLength = len(readBuffer)
-	} else {
-		copy(readBuffer, reader.nextReadValue)
-		readLength = len(reader.nextReadValue)
+	nextReadValue := reader.leftOverDataFromLastRead
+
+	if len(nextReadValue) == 0 {
+		nextReadValue = <-reader.channelOfDataToRead
 	}
 
-	reader.nextReadValue = []byte{}
+	readLength := 0
+	if len(readBuffer) < len(nextReadValue) {
+		copy(readBuffer, nextReadValue[:len(readBuffer)])
+		reader.leftOverDataFromLastRead = nextReadValue[len(readBuffer):]
+		readLength = len(readBuffer)
+	} else {
+		copy(readBuffer, nextReadValue)
+		readLength = len(nextReadValue)
+		reader.leftOverDataFromLastRead = []byte{}
+	}
 
 	return readLength, nil
 }
