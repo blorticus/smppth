@@ -308,16 +308,16 @@ func (broker *InteractionBroker) NotifyThatBindWasCompletedWithPeer(nameOfBindin
 	broker.outputWriter.Write([]byte(fmt.Sprintf("(%s) completed transceiver-bind with %s\n", nameOfBindingEsme, nameOfBoundPeer)))
 }
 
-// NotifyOfPduSendAttemptFromUnknownAgent instructs the broker to write an output event message error, indicating that an attempt
-// was made to send a message to a peer that is unknown to the receiving testharness agent.
-func (broker *InteractionBroker) NotifyOfPduSendAttemptFromUnknownAgent(nameOfNonExistantEsme string) {
-	broker.outputWriter.Write([]byte(fmt.Sprintf("[ERROR] Attempt to send message from unknown Agent named (%s)\n", nameOfNonExistantEsme)))
-}
-
 // NotifyThatSmppPduWasSentToPeer instructs the broker to write an output event message indicating that a local agent successfully sent a message to
 // a remote peer
 func (broker *InteractionBroker) NotifyThatSmppPduWasSentToPeer(pduSentToPeer *smpp.PDU, nameOfSendingPeer string, nameOfReceivingPeer string) {
 	broker.outputWriter.Write([]byte(fmt.Sprintf("(%s) sent %s to %s\n", nameOfSendingPeer, pduSentToPeer.CommandName(), nameOfReceivingPeer)))
+}
+
+// NotifyThatErrorOccurredWhileTryingToSendMessage instructs the broker to write an output event message indicating an attempt to send a message
+// from an agent to a remote peer failed.
+func (broker *InteractionBroker) NotifyThatErrorOccurredWhileTryingToSendMessage(err error, pduThatAgentAttemptedToSend *smpp.PDU, nameOfSendingPeer string, nameOfReceivingPeer string) {
+	broker.outputWriter.Write([]byte(fmt.Sprintf("[ERROR] failed to send %s from %s to %s: %s\n", pduThatAgentAttemptedToSend.CommandName(), nameOfSendingPeer, nameOfReceivingPeer, err)))
 }
 
 // WriteOutHelp instructs the broker to write an output event message listing the various possible input commands and their

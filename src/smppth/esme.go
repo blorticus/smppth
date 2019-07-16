@@ -10,26 +10,22 @@ import (
 // ESME represents an SMPP 3.4 client, which initiates one or more transport connections and sends binds
 // on those connections
 type ESME struct {
-	name                             string
-	ip                               net.IP
-	port                             uint16
-	peerBinds                        []smppBindInfo
-	connectionToPeerForPeerNamed     map[string]net.Conn
-	channelOfEventsRaisedByThisAgent chan *AgentEvent
-	seqNumberOfNextOutgoingPdu       uint32
+	name                                        string
+	ip                                          net.IP
+	port                                        uint16
+	peerBinds                                   []smppBindInfo
+	mapOfConnectorForRemotePeerByRemotePeerName map[string]*esmePeerMessageListener
 }
 
 // NewEsme creates an SMPP 3.4 client with the given name, and using the given IP and port for outgoing
 // transport connections
 func NewEsme(esmeName string, esmeIP net.IP, esmePort uint16) *ESME {
 	return &ESME{
-		name:                             esmeName,
-		ip:                               esmeIP,
-		port:                             esmePort,
-		peerBinds:                        make([]smppBindInfo, 0, 10),
-		connectionToPeerForPeerNamed:     make(map[string]net.Conn),
-		channelOfEventsRaisedByThisAgent: nil,
-		seqNumberOfNextOutgoingPdu:       1,
+		name:      esmeName,
+		ip:        esmeIP,
+		port:      esmePort,
+		peerBinds: make([]smppBindInfo, 0, 10),
+		mapOfConnectorForRemotePeerByRemotePeerName: make(map[string]*esmePeerMessageListener),
 	}
 }
 
@@ -42,32 +38,13 @@ func (esme *ESME) Name() string {
 // MessageDescriptor.  No effort is made to validate that the MessageDescriptor SourceAgentName
 // matches this agent's name.
 func (esme *ESME) SendMessageToPeer(message *MessageDescriptor) error {
-	connectionToPeer := esme.connectionToPeerForPeerNamed[message.NameOfRemotePeer]
+	connector := esme.mapOfConnectorForRemotePeerByRemotePeerName[message.NameOfRemotePeer]
 
-	if connectionToPeer == nil {
+	if connector == nil {
 		return fmt.Errorf("No such SMSC peer named (%s) is known to this ESME", message.NameOfRemotePeer)
 	}
 
-	esme.setSequenceNumberOfPduTowardRemotePeerToLocalSequenceNumber(message.PDU, message.NameOfRemotePeer)
-
-	encodedPDU, err := message.PDU.Encode()
-
-	if err != nil {
-		return err
-	}
-
-	_, err = connectionToPeer.Write(encodedPDU)
-
-	if err != nil {
-		return fmt.Errorf("Error writing PDU to peer named (%s): %s", message.NameOfRemotePeer, err)
-	}
-
-	return nil
-}
-
-func (esme *ESME) setSequenceNumberOfPduTowardRemotePeerToLocalSequenceNumber(pdu *smpp.PDU, nameOfRemotePeer string) {
-	pdu.SequenceNumber = esme.seqNumberOfNextOutgoingPdu
-	esme.seqNumberOfNextOutgoingPdu++
+	return connector.sendSmppPduToPeer(message.PDU)
 }
 
 // StartEventLoop instructs this ESME agent to start listening for incoming transport connections,
@@ -84,7 +61,7 @@ func (esme *ESME) StartEventLoop(agentEventChannel chan<- *AgentEvent) {
 
 		agentEventChannel <- &AgentEvent{Type: CompletedBind, SourceAgent: esme, RemotePeerName: peerBind.smscName}
 
-		esme.connectionToPeerForPeerNamed[peerBind.smscName] = conn
+		esme.mapOfConnectorForRemotePeerByRemotePeerName[peerBind.smscName] = peerConnector
 
 		go peerConnector.startListeningForIncomingMessagesFromPeer(agentEventChannel)
 	}
@@ -115,10 +92,17 @@ type esmePeerMessageListener struct {
 	extraPDUsCollectedWhileWaitingForBindResponse []*smpp.PDU
 	nameOfRemotePeer                              string
 	parentESME                                    *ESME
+	nextGeneratedSmppRequestPduSeqNumber          uint32
 }
 
 func newEsmePeerMessageListener(nameOfPeer string, parentESME *ESME, connectionToRemotePeer net.Conn) *esmePeerMessageListener {
-	return &esmePeerMessageListener{nameOfRemotePeer: nameOfPeer, parentESME: parentESME, peerConnection: connectionToRemotePeer, streamReader: smpp.NewNetworkStreamReader(connectionToRemotePeer)}
+	return &esmePeerMessageListener{
+		nameOfRemotePeer:                     nameOfPeer,
+		parentESME:                           parentESME,
+		peerConnection:                       connectionToRemotePeer,
+		streamReader:                         smpp.NewNetworkStreamReader(connectionToRemotePeer),
+		nextGeneratedSmppRequestPduSeqNumber: 1,
+	}
 }
 
 func (connector *esmePeerMessageListener) completeTransceiverBindingTowardPeer(esmeSystemID string, esmeSystemType string, bindPassword string) error {
@@ -180,4 +164,27 @@ func (connector *esmePeerMessageListener) detectsThatPeerConnectionHasClosed(err
 	}
 
 	return false
+}
+
+func (connector *esmePeerMessageListener) sendSmppPduToPeer(pdu *smpp.PDU) error {
+	if pdu.IsRequest() {
+		connector.resetSmppRequestPduSequenceNumberToLocalSequence(pdu)
+	}
+
+	encodedPDU, err := pdu.Encode()
+	if err != nil {
+		return err
+	}
+
+	_, err = connector.peerConnection.Write(encodedPDU)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (connector *esmePeerMessageListener) resetSmppRequestPduSequenceNumberToLocalSequence(requestPdu *smpp.PDU) {
+	requestPdu.SequenceNumber = connector.nextGeneratedSmppRequestPduSeqNumber
+	connector.nextGeneratedSmppRequestPduSeqNumber++
 }

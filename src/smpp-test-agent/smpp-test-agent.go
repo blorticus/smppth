@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"smpp"
 	"smppth"
 )
 
@@ -68,20 +69,33 @@ func main() {
 			case smppth.ReceivedMessage:
 				interactionBroker.NotifyThatSmppPduWasReceived(event.SmppPDU, event.SourceAgent.Name(), event.RemotePeerName)
 
+				if app.thinksItShouldResponseToReceivedPdu(event.SmppPDU) {
+					responsePdu := app.generateResponsePduForReceivedPdu(event.SmppPDU, event.RemotePeerName, event.SourceAgent.Name())
+
+					nameOfSourcePeer := event.SourceAgent.Name()
+					nameOfRemotePeer := event.RemotePeerName
+
+					err := app.attemptToSendMessageBasedOnMessageDescriptor(&smppth.MessageDescriptor{PDU: responsePdu, NameOfSourcePeer: nameOfSourcePeer, NameOfRemotePeer: nameOfRemotePeer})
+
+					if err != nil {
+						interactionBroker.NotifyThatErrorOccurredWhileTryingToSendMessage(err, responsePdu, nameOfSourcePeer, nameOfRemotePeer)
+					} else {
+						interactionBroker.NotifyThatSmppPduWasSentToPeer(responsePdu, nameOfSourcePeer, nameOfRemotePeer)
+					}
+				}
+
 			case smppth.SentMessage:
 				interactionBroker.NotifyThatSmppPduWasSentToPeer(event.SmppPDU, event.SourceAgent.Name(), event.RemotePeerName)
 			}
 
 		case descriptorOfMessageToSend := <-channelOfMessagesToSend:
-			agent := app.retrieveEsmeObjectByName(descriptorOfMessageToSend.NameOfSourcePeer)
+			err := app.attemptToSendMessageBasedOnMessageDescriptor(descriptorOfMessageToSend)
 
-			if agent == nil {
-				interactionBroker.NotifyOfPduSendAttemptFromUnknownAgent(descriptorOfMessageToSend.NameOfSourcePeer)
-				continue
+			if err != nil {
+				interactionBroker.NotifyThatErrorOccurredWhileTryingToSendMessage(err, descriptorOfMessageToSend.PDU, descriptorOfMessageToSend.NameOfSourcePeer, descriptorOfMessageToSend.NameOfRemotePeer)
+			} else {
+				interactionBroker.NotifyThatSmppPduWasSentToPeer(descriptorOfMessageToSend.PDU, descriptorOfMessageToSend.NameOfSourcePeer, descriptorOfMessageToSend.NameOfRemotePeer)
 			}
-
-			agent.SendMessageToPeer(descriptorOfMessageToSend)
-			interactionBroker.NotifyThatSmppPduWasSentToPeer(descriptorOfMessageToSend.PDU, descriptorOfMessageToSend.NameOfSourcePeer, descriptorOfMessageToSend.NameOfRemotePeer)
 		}
 	}
 }
@@ -129,10 +143,58 @@ func (app *smppTestAgentApplication) rememberAgentObjectByName(agentName string,
 	app.agentObjectByAgentName[agentName] = agentObject
 }
 
-func (app *smppTestAgentApplication) retrieveEsmeObjectByName(agentName string) smppth.Agent {
+func (app *smppTestAgentApplication) retrieveAgentObjectByName(agentName string) smppth.Agent {
 	return app.agentObjectByAgentName[agentName]
 }
 
 func (app *smppTestAgentApplication) getIoWriterStreamHandleForFileNamed(fileName string) (io.Writer, error) {
 	return os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY, 0640)
+}
+
+func (app *smppTestAgentApplication) thinksItShouldResponseToReceivedPdu(receivedPdu *smpp.PDU) bool {
+	switch receivedPdu.CommandID {
+	case smpp.CommandEnquireLink:
+		return true
+	case smpp.CommandSubmitSm:
+		return false
+	default:
+		return false
+	}
+}
+
+func (app *smppTestAgentApplication) generateResponsePduForReceivedPdu(receivedPdu *smpp.PDU, nameOfPeerThatSentPdu string, nameOfPeerThatReceivedPdu string) (responsePdu *smpp.PDU) {
+	switch receivedPdu.CommandID {
+	case smpp.CommandEnquireLink:
+		return app.generateEnquireLinkRespForRequest(receivedPdu)
+	case smpp.CommandSubmitSm:
+		return app.generateSubmitSmRespForRequest(receivedPdu, nameOfPeerThatSentPdu, nameOfPeerThatReceivedPdu)
+	}
+
+	return nil
+}
+
+func (app *smppTestAgentApplication) generateEnquireLinkRespForRequest(receivedPdu *smpp.PDU) (responsePdu *smpp.PDU) {
+	return smpp.NewPDU(smpp.CommandEnquireLinkResp, 0, receivedPdu.SequenceNumber, []*smpp.Parameter{}, []*smpp.Parameter{})
+}
+
+func (app *smppTestAgentApplication) generateSubmitSmRespForRequest(receivedPdu *smpp.PDU, nameOfPeerThatSentPdu string, nameOfPeerThatReceivedPdu string) (responsePdu *smpp.PDU) {
+	return smpp.NewPDU(smpp.CommandSubmitSmResp, 0, receivedPdu.SequenceNumber, []*smpp.Parameter{
+		smpp.NewCOctetStringParameter(fmt.Sprintf("messageid:%s", nameOfPeerThatReceivedPdu)),
+	}, []*smpp.Parameter{})
+}
+
+func (app *smppTestAgentApplication) attemptToSendMessageBasedOnMessageDescriptor(descriptorOfMessageToSend *smppth.MessageDescriptor) error {
+	agent := app.retrieveAgentObjectByName(descriptorOfMessageToSend.NameOfSourcePeer)
+
+	if agent == nil {
+		return fmt.Errorf("The identified source agent (%s) is not known", descriptorOfMessageToSend.NameOfSourcePeer)
+	}
+
+	err := agent.SendMessageToPeer(descriptorOfMessageToSend)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
