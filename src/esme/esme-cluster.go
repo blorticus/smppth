@@ -14,7 +14,7 @@ import (
 func main() {
 	app := newEsmeClusterApplication()
 
-	yamlFileName, err := app.parseCommandLine()
+	yamlFileName, eventOutputFileName, err := app.parseCommandLine()
 	app.dieIfError(err)
 
 	yamlReader := smppth.NewApplicationConfigYamlReader()
@@ -29,7 +29,7 @@ func main() {
 		go esme.StartEventLoop(esmeEventChannel)
 	}
 
-	fileWriterStream, err := app.getIoWriterStreamHandleForFileNamed("foo.out")
+	fileWriterStream, err := app.getIoWriterStreamHandleForFileNamed(eventOutputFileName)
 	app.dieIfError(err)
 
 	interactionBroker := smppth.NewInteractionBroker().SetInputPromptStream(os.Stdout).SetInputReader(os.Stdin).SetOutputWriter(fileWriterStream)
@@ -41,17 +41,17 @@ func main() {
 		case event := <-esmeEventChannel:
 			switch event.Type {
 			case smppth.ReceivedMessage:
-				interactionBroker.NotifyThatSmppPduWasReceived(event.SmppPDU, event.SourceEsme.Name(), event.NameOfMessageSender)
+				interactionBroker.NotifyThatSmppPduWasReceived(event.SmppPDU, event.SourceAgent.Name(), event.RemotePeerName)
 
 			case smppth.CompletedBind:
-				interactionBroker.NotifyThatBindWasCompletedWithPeer(event.SourceEsme.Name(), event.BoundPeerName)
+				interactionBroker.NotifyThatBindWasCompletedWithPeer(event.SourceAgent.Name(), event.RemotePeerName)
 			}
 
 		case descriptorOfMessageToSend := <-channelOfMessagesToSend:
-			esme := app.retrieveEsmeObjectByName(descriptorOfMessageToSend.SendFromEsmeNamed)
+			esme := app.retrieveEsmeObjectByName(descriptorOfMessageToSend.NameOfSourcePeer)
 
 			if esme == nil {
-				interactionBroker.NotifyOfPduSendAttemptFromUnknownEsme(descriptorOfMessageToSend.SendFromEsmeNamed)
+				interactionBroker.NotifyOfPduSendAttemptFromUnknownAgent(descriptorOfMessageToSend.NameOfSourcePeer)
 				continue
 			}
 
@@ -65,7 +65,7 @@ type esmeClusterApplication struct {
 }
 
 func newEsmeClusterApplication() *esmeClusterApplication {
-	return &esmeClusterApplication{}
+	return &esmeClusterApplication{esmeObjectByEsmeName: make(map[string]*smppth.ESME)}
 }
 
 func (app *esmeClusterApplication) dieIfError(err error) {
@@ -75,16 +75,21 @@ func (app *esmeClusterApplication) dieIfError(err error) {
 	}
 }
 
-func (app *esmeClusterApplication) parseCommandLine() (string, error) {
-	if len(os.Args) != 2 {
-		return "", errors.New(app.syntaxString())
-	}
+func (app *esmeClusterApplication) parseCommandLine() (string, string, error) {
+	switch len(os.Args) {
+	case 2:
+		return os.Args[1], "/tmp/esme-output.txt", nil
 
-	return os.Args[1], nil
+	case 3:
+		return os.Args[1], os.Args[2], nil
+
+	default:
+		return "", "", errors.New(app.syntaxString())
+	}
 }
 
 func (app *esmeClusterApplication) syntaxString() string {
-	return fmt.Sprintf("%s <yaml_file>", path.Base(os.Args[0]))
+	return fmt.Sprintf("%s <yaml_file> [<event_output_file>", path.Base(os.Args[0]))
 }
 
 func (app *esmeClusterApplication) rememberEsmeObjectByName(esmeName string, esmeObject *smppth.ESME) {

@@ -54,6 +54,7 @@ func TestEsmePeerMessageListener(t *testing.T) {
 
 func TestEsmeOneSmscEndpoint(t *testing.T) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	defer listener.Close()
 
 	if err != nil {
 		panic(fmt.Sprintf("Failed to create local listener for SMSC: %s", err))
@@ -109,6 +110,7 @@ func TestEsmeOneSmscEndpoint(t *testing.T) {
 
 func smscSimulatedListener(listener net.Listener) {
 	conn, err := listener.Accept()
+	defer conn.Close()
 
 	if err != nil {
 		panic(fmt.Sprintf("Failed on simulated SMSC listener Accept(): %s", err))

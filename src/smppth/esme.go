@@ -2,6 +2,7 @@ package smppth
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"smpp"
 )
@@ -153,10 +154,21 @@ func (connector *esmePeerMessageListener) startListeningForIncomingMessagesFromP
 
 	for {
 		pdus, err := connector.streamReader.ExtractNextPDUs()
+		if connector.detectsThatPeerConnectionHasClosed(err) {
+			return
+		}
 		connector.parentESME.panicIfError(err)
 
 		for _, pdu := range pdus {
 			eventChannel <- &AgentEvent{Type: ReceivedMessage, SmppPDU: pdu, RemotePeerName: connector.nameOfRemotePeer, SourceAgent: connector.parentESME}
 		}
 	}
+}
+
+func (connector *esmePeerMessageListener) detectsThatPeerConnectionHasClosed(err error) bool {
+	if err != nil && err == io.EOF {
+		return true
+	}
+
+	return false
 }

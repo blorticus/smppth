@@ -14,7 +14,7 @@ import (
 func main() {
 	app := newSmscClusterApplication()
 
-	yamlFileName, err := app.parseCommandLine()
+	yamlFileName, outputFileName, err := app.parseCommandLine()
 	app.dieIfError(err)
 
 	yamlReader := smppth.NewApplicationConfigYamlReader()
@@ -25,11 +25,11 @@ func main() {
 	agentEventChannel := make(chan *smppth.AgentEvent, len(smscs))
 
 	for _, smsc := range smscs {
-		app.mapAgentNameToItsReceiverChannel(smsc.Name, smsc.ChannelOfMessagesForAgentToSend())
-		go smsc.StartListening(agentEventChannel)
+		app.rememberSmscObjectByName(smsc.Name(), smsc)
+		go smsc.StartEventLoop(agentEventChannel)
 	}
 
-	fileWriterStream, err := app.getIoWriterStreamHandleForFileNamed("foo.out")
+	fileWriterStream, err := app.getIoWriterStreamHandleForFileNamed(outputFileName)
 	app.dieIfError(err)
 
 	interactionBroker := smppth.NewInteractionBroker().SetInputPromptStream(os.Stdout).SetInputReader(os.Stdin).SetOutputWriter(fileWriterStream)
@@ -41,31 +41,31 @@ func main() {
 		case event := <-agentEventChannel:
 			switch event.Type {
 			case smppth.ReceivedMessage:
-				interactionBroker.NotifyThatSmppPduWasReceived(event.SmppPDU, event.SourceEsme.Name, event.NameOfMessageSender)
+				interactionBroker.NotifyThatSmppPduWasReceived(event.SmppPDU, event.SourceAgent.Name(), event.RemotePeerName)
 
 			case smppth.CompletedBind:
-				interactionBroker.NotifyThatBindWasCompletedWithPeer(event.SourceEsme.Name, event.BoundPeerName)
+				interactionBroker.NotifyThatBindWasCompletedWithPeer(event.SourceAgent.Name(), event.RemotePeerName)
 			}
 
 		case descriptorOfMessageToSend := <-channelOfMessagesToSend:
-			sendChannel := app.retrieveOutgoingMessageChannelFromEsmeNamed(descriptorOfMessageToSend.SendFromEsmeNamed)
+			smsc := app.retrieveSmscByItsName(descriptorOfMessageToSend.NameOfSourcePeer)
 
-			if sendChannel == nil {
-				interactionBroker.NotifyOfPduSendAttemptFromUnknownEsme(descriptorOfMessageToSend.SendFromEsmeNamed)
+			if smsc == nil {
+				interactionBroker.NotifyOfPduSendAttemptFromUnknownAgent(descriptorOfMessageToSend.NameOfSourcePeer)
 				continue
 			}
 
-			sendChannel <- descriptorOfMessageToSend
+			smsc.SendMessageToPeer(descriptorOfMessageToSend)
 		}
 	}
 }
 
 type smscClusterApplication struct {
-	esmeReceiveChannelByEsmeName map[string]chan *smppth.MessageDescriptor
+	smscObjectBySmscName map[string]*smppth.SMSC
 }
 
 func newSmscClusterApplication() *smscClusterApplication {
-	return &smscClusterApplication{}
+	return &smscClusterApplication{smscObjectBySmscName: make(map[string]*smppth.SMSC)}
 }
 
 func (app *smscClusterApplication) dieIfError(err error) {
@@ -75,26 +75,31 @@ func (app *smscClusterApplication) dieIfError(err error) {
 	}
 }
 
-func (app *smscClusterApplication) parseCommandLine() (string, error) {
-	if len(os.Args) != 2 {
-		return "", errors.New(app.syntaxString())
-	}
+func (app *smscClusterApplication) parseCommandLine() (string, string, error) {
+	switch len(os.Args) {
+	case 2:
+		return os.Args[1], "/tmp/smsc-output.txt", nil
 
-	return os.Args[1], nil
+	case 3:
+		return os.Args[1], os.Args[2], nil
+
+	default:
+		return "", "", errors.New(app.syntaxString())
+	}
 }
 
 func (app *smscClusterApplication) syntaxString() string {
 	return fmt.Sprintf("%s <yaml_file>", path.Base(os.Args[0]))
 }
 
-func (app *smscClusterApplication) mapAgentNameToItsReceiverChannel(esmeName string, messageChannel chan *smppth.MessageDescriptor) {
-	app.esmeReceiveChannelByEsmeName[esmeName] = messageChannel
-}
-
-func (app *smscClusterApplication) retrieveOutgoingMessageChannelFromEsmeNamed(esmeName string) chan *smppth.MessageDescriptor {
-	return app.esmeReceiveChannelByEsmeName[esmeName]
-}
-
 func (app *smscClusterApplication) getIoWriterStreamHandleForFileNamed(fileName string) (io.Writer, error) {
 	return os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY, 0640)
+}
+
+func (app *smscClusterApplication) rememberSmscObjectByName(smscName string, smsc *smppth.SMSC) {
+	app.smscObjectBySmscName[smscName] = smsc
+}
+
+func (app *smscClusterApplication) retrieveSmscByItsName(smscName string) *smppth.SMSC {
+	return app.smscObjectBySmscName[smscName]
 }

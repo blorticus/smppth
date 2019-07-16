@@ -21,6 +21,7 @@ type smscYaml struct {
 	IP           string `yaml:"IP"`
 	Port         uint16 `yaml:"Port"`
 	BindPassword string `yaml:"BindPassword"`
+	BindSystemID string `yaml:"BindSystemID"`
 }
 
 type esmeYaml struct {
@@ -100,7 +101,7 @@ func (reader *ApplicationConfigYamlReader) ParseReader(ioReader io.Reader) ([]*E
 		}
 
 		smscDefinitionByName[smscDefinition.Name] = smscDefinition
-		smscObjectList[i] = &SMSC{name: smscDefinition.Name, ip: bindIP, port: smscDefinition.Port}
+		smscObjectList[i] = NewSMSC(smscDefinition.Name, smscDefinition.BindSystemID, bindIP, smscDefinition.Port)
 	}
 
 	for _, bindDefinition := range config.TransceiverBinds {

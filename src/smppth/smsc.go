@@ -13,11 +13,16 @@ type SMSC struct {
 	ip                                          net.IP
 	port                                        uint16
 	mapOfConnectionTowardRemotePeersByTheirName map[string]net.Conn
+	assertedSystemID                            string
 }
 
 // NewSMSC creates a new SMSC agent.
-func NewSMSC(smscName string, listeningIP net.IP, listeningPort uint16) *SMSC {
-	return &SMSC{name: smscName, ip: listeningIP, port: listeningPort, mapOfConnectionTowardRemotePeersByTheirName: make(map[string]net.Conn)}
+func NewSMSC(smscName string, smscBindSystemID string, listeningIP net.IP, listeningPort uint16) *SMSC {
+	if smscBindSystemID == "" {
+		smscBindSystemID = smscName
+	}
+
+	return &SMSC{name: smscName, ip: listeningIP, port: listeningPort, mapOfConnectionTowardRemotePeersByTheirName: make(map[string]net.Conn), assertedSystemID: smscBindSystemID}
 }
 
 // Name returns the name of this SMSC agent instance

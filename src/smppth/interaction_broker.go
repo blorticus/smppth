@@ -308,10 +308,10 @@ func (broker *InteractionBroker) NotifyThatBindWasCompletedWithPeer(nameOfBindin
 	broker.outputWriter.Write([]byte(fmt.Sprintf("(%s) completed transceiver-bind with %s\n", nameOfBindingEsme, nameOfBoundPeer)))
 }
 
-// NotifyOfPduSendAttemptFromUnknownEsme instructs the broker to write an output event message error, indicating that an attempt
+// NotifyOfPduSendAttemptFromUnknownAgent instructs the broker to write an output event message error, indicating that an attempt
 // was made to send a message to a peer that is unknown to the receiving testharness agent.
-func (broker *InteractionBroker) NotifyOfPduSendAttemptFromUnknownEsme(nameOfNonExistantEsme string) {
-	broker.outputWriter.Write([]byte(fmt.Sprintf("[ERROR] Attempt to send message from unknown ESME named (%s)", nameOfNonExistantEsme)))
+func (broker *InteractionBroker) NotifyOfPduSendAttemptFromUnknownAgent(nameOfNonExistantEsme string) {
+	broker.outputWriter.Write([]byte(fmt.Sprintf("[ERROR] Attempt to send message from unknown Agent named (%s)", nameOfNonExistantEsme)))
 }
 
 // WriteOutHelp instructs the broker to write an output event message listing the various possible input commands and their
@@ -320,7 +320,7 @@ func (broker *InteractionBroker) WriteOutHelp() {
 	helpText := `
 $esme_name: send submit-sm to $smsc_name short_message="$message"
 $esme_name: send enquire-link to $smsc_name
-	`
+`
 	broker.outputWriter.Write([]byte(helpText))
 }
 

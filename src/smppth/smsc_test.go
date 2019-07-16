@@ -7,7 +7,7 @@ import (
 )
 
 func TestSmscPeerMessageHandler(t *testing.T) {
-	parentSMSC := NewSMSC("testSmsc", net.ParseIP("127.0.0.1"), 2772)
+	parentSMSC := NewSMSC("testSmsc", "testSmsc", net.ParseIP("127.0.0.1"), 2772)
 	mockRemotePeerConnection := newFakeNetConn()
 
 	handler := newSmscPeerMessageHandler(parentSMSC, mockRemotePeerConnection)

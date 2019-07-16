@@ -58,16 +58,12 @@ func expectValueOnMockWriter(writer *mockWriter, expectedData []byte) error {
 	timedOutWaitingForWrite := false
 	var writeDataReceived []byte
 
-	fmt.Println("Entering select")
-
 	select {
 	case writeDataReceived = <-writer.channelOfWrittenData:
 		break
 	case <-time.After(time.Second * 3):
 		timedOutWaitingForWrite = true
 	}
-
-	fmt.Printf("Exited Select: %t\b", timedOutWaitingForWrite)
 
 	if timedOutWaitingForWrite {
 		return fmt.Errorf("timed out waiting for write input")
