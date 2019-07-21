@@ -256,7 +256,7 @@ func (broker *InteractionBroker) attemptToMakeSubmitSmPdu(commandParameterMap ma
 		smpp.NewFLParameter(uint8(0)),           // data_coding
 		smpp.NewFLParameter(uint8(0)),           // sm_defalt_msg_id
 		smpp.NewFLParameter(uint8(len(shortMessage))),
-		smpp.NewCOctetStringParameter(shortMessage),
+		smpp.NewOctetStringFromString(shortMessage),
 	}, []*smpp.Parameter{}), nil
 }
 
@@ -268,7 +268,7 @@ func (broker *InteractionBroker) promptForNextCommand() string {
 	input := broker.read()
 
 	if broker.inputByteStream[len(input)-1] != byte('\n') {
-		broker.writeLine("[ERROR] Command line too long.  Ignored.\n")
+		broker.writeLine("[ERROR] Command contains no newline or is too long.\n")
 		broker.discardInputUntilNewline()
 
 		return broker.promptForNextCommand()
@@ -336,7 +336,7 @@ func (broker *InteractionBroker) NotifyThatErrorOccurredWhileTryingToSendMessage
 // parameters.
 func (broker *InteractionBroker) WriteOutHelp() {
 	helpText := `
-$esme_name: send submit-sm to $smsc_name short_message="$message"
+$esme_name: send submit-sm to $smsc_name short_message="$message" dest_addr=$addr
 $esme_name: send enquire-link to $smsc_name
 `
 	broker.outputWriter.Write([]byte(helpText))
