@@ -5,6 +5,9 @@ import (
 	"io"
 	"net"
 	"smpp"
+	"syscall"
+
+	"golang.org/x/sys/unix"
 )
 
 // ESME represents an SMPP 3.4 client, which initiates one or more transport connections and sends binds
@@ -73,8 +76,31 @@ func (esme *ESME) panicIfError(err error) {
 	}
 }
 
+func dialControlFunctionToSetReuse(network, address string, c syscall.RawConn) error {
+	var err error
+	c.Control(func(fd uintptr) {
+		err = unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_REUSEADDR, 1)
+		if err != nil {
+			return
+		}
+
+		err = unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_REUSEPORT, 1)
+		if err != nil {
+			return
+		}
+	})
+	return err
+}
+
 func (esme *ESME) connectTransportToPeer(remoteIP net.IP, remotePort uint16) (net.Conn, error) {
-	return net.Dial("tcp", fmt.Sprintf("%s:%d", remoteIP.String(), remotePort))
+	laddr, _ := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", esme.ip.String(), esme.port))
+
+	d := net.Dialer{
+		Control:   dialControlFunctionToSetReuse,
+		LocalAddr: laddr,
+	}
+
+	return d.Dial("tcp", fmt.Sprintf("%s:%d", remoteIP.String(), remotePort))
 }
 
 type smppBindInfo struct {

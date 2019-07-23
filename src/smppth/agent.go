@@ -1,6 +1,8 @@
 package smppth
 
-import "smpp"
+import (
+	"smpp"
+)
 
 // Agent is either a testharness agent, either an ESME or an SMSC
 type Agent interface {
