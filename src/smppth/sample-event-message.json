@@ -1,0 +1,9 @@
+{
+    "event": {
+        "type": "ReceivedMessage",
+        "message": {
+            "command_id": 9,
+            "command_name": "transceiver-bind"
+        }
+    }
+}
