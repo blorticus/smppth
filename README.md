@@ -38,8 +38,8 @@ The command set includes:
 
 * **help** - show set of supported commands
 * **&lt;source_peer&gt;: send &lt;PDU_type&gt; to &lt;peer_name&gt; [&lt;params&gt;]** - send a PDU from a member of a the AgentGroup to one of its peer, by name.  This includes the following &lt;PDU_type&gt;s:
-  * **&lt;source_peer&gt;: send enquire-link to &lt;peer_name&gt;** - send enquire-link to peer
-  * **&lt;source_peer&gt;: send submit-sm to &lt;peer_name&gt; dest_addr=&lt;dest_addr_string&gt; short_message=&lt;message_string&gt; - send a submit-sm.  If &lt;dest_addr_string&gt; is provided, set the dest_addr field to this value (up to the limit of the field size). Otherwise, the field value is null.  If &lt;message_string&gt; is provided, set the short_message field to this value (up to the field limit value) and set the sm_length field to match. If this value is not provided, a default message is used.
+  * `&lt;source_peer&gt;: send enquire-link to &lt;peer_name&gt;` - send enquire-link to peer
+  * `&lt;source_peer&gt;: send submit-sm to &lt;peer_name&gt; dest_addr=&lt;dest_addr_string&gt; short_message=&lt;message_string&gt;` - send a submit-sm.  If &lt;dest_addr_string&gt; is provided, set the dest_addr field to this value (up to the limit of the field size). Otherwise, the field value is null.  If &lt;message_string&gt; is provided, set the short_message field to this value (up to the field limit value) and set the sm_length field to match. If this value is not provided, a default message is used.
 
 In the app/ directory, smpp-test-agent.go is an application that can be used to read a YAML
 definition and launch a group of ESMEs or SMSCs.  It is started as follows:
