@@ -6,7 +6,7 @@ import (
 )
 
 func TestCommandMatcherEmptyDigestCommand(t *testing.T) {
-	matcher := newInteractionBrokerCommandMatcher()
+	matcher := newTextInteractionBrokerCommandMatcher()
 
 	matcher.digestCommand("")
 
@@ -32,7 +32,7 @@ func TestValidSendCommands(t *testing.T) {
 }
 
 func TestBreakSendCommandIntoStructWithoutParams(t *testing.T) {
-	matches, err := compareSendCommandStructsCreatedFrom("esme01: send submit-sm to smsc01", &interactionBrokerSendCommand{
+	matches, err := compareSendCommandStructsCreatedFrom("esme01: send submit-sm to smsc01", &textInteractionBrokerSendCommand{
 		commandParametersMap: map[string]string{},
 		commandTypeName:      "submit-sm",
 		pduReceiverName:      "smsc01",
@@ -45,7 +45,7 @@ func TestBreakSendCommandIntoStructWithoutParams(t *testing.T) {
 }
 
 func TestBreakSendCommandIntoStructWithSingleParam(t *testing.T) {
-	matches, err := compareSendCommandStructsCreatedFrom("esme01: send submit-sm to smsc01 short_message=\"this is a short message\"", &interactionBrokerSendCommand{
+	matches, err := compareSendCommandStructsCreatedFrom("esme01: send submit-sm to smsc01 short_message=\"this is a short message\"", &textInteractionBrokerSendCommand{
 		commandParametersMap: map[string]string{"short_message": "this is a short message"},
 		commandTypeName:      "submit-sm",
 		pduReceiverName:      "smsc01",
@@ -58,7 +58,7 @@ func TestBreakSendCommandIntoStructWithSingleParam(t *testing.T) {
 }
 
 func TestBreakSendCommandIntoStructWithThreeParams(t *testing.T) {
-	matches, err := compareSendCommandStructsCreatedFrom("esme01: send submit-sm to smsc01 short_message='this is a short message' dest_addr_ton=Private dest_addr=001100", &interactionBrokerSendCommand{
+	matches, err := compareSendCommandStructsCreatedFrom("esme01: send submit-sm to smsc01 short_message='this is a short message' dest_addr_ton=Private dest_addr=001100", &textInteractionBrokerSendCommand{
 		commandParametersMap: map[string]string{"short_message": "this is a short message", "dest_addr_ton": "Private", "dest_addr": "001100"},
 		commandTypeName:      "submit-sm",
 		pduReceiverName:      "smsc01",
@@ -70,8 +70,8 @@ func TestBreakSendCommandIntoStructWithThreeParams(t *testing.T) {
 	}
 }
 
-func compareSendCommandStructsCreatedFrom(command string, expected *interactionBrokerSendCommand) (bool, error) {
-	matcher := newInteractionBrokerCommandMatcher()
+func compareSendCommandStructsCreatedFrom(command string, expected *textInteractionBrokerSendCommand) (bool, error) {
+	matcher := newTextInteractionBrokerCommandMatcher()
 	matcher.digestCommand(command)
 
 	if !matcher.saysThisIsAValidSendCommand() {
@@ -120,7 +120,7 @@ func compareSendCommandStructsCreatedFrom(command string, expected *interactionB
 }
 
 func cleanMatcherReportsThisIsAValidSetCommand(command string) bool {
-	matcher := newInteractionBrokerCommandMatcher()
+	matcher := newTextInteractionBrokerCommandMatcher()
 	matcher.digestCommand(command)
 	return matcher.saysThisIsAValidSendCommand()
 }

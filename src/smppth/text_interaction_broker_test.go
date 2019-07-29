@@ -12,7 +12,7 @@ func TestBasicInteraction(t *testing.T) {
 	outputWriter := newMockWriter("output")
 	inputReader := newMockReader("input")
 
-	broker := NewInteractionBroker().SetInputPromptStream(promptWriter).SetInputReader(inputReader).SetOutputWriter(outputWriter)
+	broker := NewTextInteractionBroker().SetInputPromptStream(promptWriter).SetInputReader(inputReader).SetOutputWriter(outputWriter)
 	msgSendChannel := broker.RetrieveSendMessageChannel()
 
 	go broker.BeginInteractiveSession()
@@ -49,8 +49,8 @@ func TestBasicInteraction(t *testing.T) {
 		t.Errorf("[2] For received messageDescriptor: %s", err)
 	}
 
-	if string(nextSendMessageDescritor.PDU.MandatoryParameters[17].Value.(string)) != "This is a test" {
-		t.Errorf("[2] For received PDU, expected short_message = (This is a test), got = (%s)", string(nextSendMessageDescritor.PDU.MandatoryParameters[17].Value.(string)))
+	if string(nextSendMessageDescritor.PDU.MandatoryParameters[17].Value.([]byte)) != "This is a test" {
+		t.Errorf("[2] For received PDU, expected short_message = (This is a test), got = (%s)", string(nextSendMessageDescritor.PDU.MandatoryParameters[17].Value.([]byte)))
 	}
 }
 
