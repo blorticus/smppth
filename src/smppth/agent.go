@@ -15,14 +15,10 @@ type Agent interface {
 type AgentEventType int
 
 const (
-	// ReceivedMessage is the AgentEvent type when a message is received from a peer
-	ReceivedMessage AgentEventType = iota
-	// SentMessage is the AgentEvent type when the local Agent sent a message to a peer
-	SentMessage
-	// SentBind is the AgentEvent type when an agent has sent a bind-* request message to its peer
-	SentBind
-	// ReceivedBind is the AgentEvent type when an agent receives a bind-* request message
-	ReceivedBind
+	// ReceivedPDU is the AgentEvent type when an SMPP PDU is received from a peer
+	ReceivedPDU AgentEventType = iota
+	// SentPDU is the AgentEvent type when the local Agent sent an SMPP PDU to a peer
+	SentPDU
 	// CompletedBind is the AgentEvent type when an agent completes a bind sequence with a peer
 	CompletedBind
 )

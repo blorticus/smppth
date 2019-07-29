@@ -37,7 +37,7 @@ func TestEsmePeerMessageListener(t *testing.T) {
 
 	eventMessage := <-eventMsgChannel
 
-	validationError := validateEventMessage(eventMessage, ReceivedMessage, "testSmsc01")
+	validationError := validateEventMessage(eventMessage, ReceivedPDU, "testSmsc01")
 
 	if validationError != nil {
 		t.Errorf("On first enquire_link from peer, for received event message, %s", validationError)
@@ -91,8 +91,8 @@ func TestEsmeOneSmscEndpoint(t *testing.T) {
 
 	nextEvent = <-esmeEventChannel
 
-	if nextEvent.Type != ReceivedMessage {
-		t.Errorf("For second received event, expected ReceivedMessage (%d), got (%d)", int(ReceivedMessage), int(nextEvent.Type))
+	if nextEvent.Type != ReceivedPDU {
+		t.Errorf("For second received event, expected ReceivedMessage (%d), got (%d)", int(ReceivedPDU), int(nextEvent.Type))
 	}
 
 	if nextEvent.RemotePeerName != "testSmsc01" {

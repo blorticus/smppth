@@ -168,7 +168,7 @@ func (connector *esmePeerMessageListener) completeTransceiverBindingTowardPeer(e
 
 func (connector *esmePeerMessageListener) startListeningForIncomingMessagesFromPeer(eventChannel chan<- *AgentEvent) {
 	for _, pdu := range connector.extraPDUsCollectedWhileWaitingForBindResponse {
-		eventChannel <- &AgentEvent{Type: ReceivedMessage, SmppPDU: pdu, RemotePeerName: connector.nameOfRemotePeer, SourceAgent: connector.parentESME}
+		eventChannel <- &AgentEvent{Type: ReceivedPDU, SmppPDU: pdu, RemotePeerName: connector.nameOfRemotePeer, SourceAgent: connector.parentESME}
 	}
 
 	for {
@@ -179,7 +179,7 @@ func (connector *esmePeerMessageListener) startListeningForIncomingMessagesFromP
 		connector.parentESME.panicIfError(err)
 
 		for _, pdu := range pdus {
-			eventChannel <- &AgentEvent{Type: ReceivedMessage, SmppPDU: pdu, RemotePeerName: connector.nameOfRemotePeer, SourceAgent: connector.parentESME}
+			eventChannel <- &AgentEvent{Type: ReceivedPDU, SmppPDU: pdu, RemotePeerName: connector.nameOfRemotePeer, SourceAgent: connector.parentESME}
 		}
 	}
 }

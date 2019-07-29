@@ -19,10 +19,10 @@ func TestSmscPeerMessageHandler(t *testing.T) {
 	go handler.startHandlingPeerConnection(eventMsgChannel)
 
 	nextEvent := <-eventMsgChannel
-	err := validateEventMessage(nextEvent, ReceivedBind, "foo")
+	err := validateEventMessage(nextEvent, ReceivedPDU, "foo")
 
 	if err != nil {
-		t.Errorf("On expected ReceivedBind event from 'foo': %s", err)
+		t.Errorf("On expected ReceivedPDU event from peer 'foo': %s", err)
 	}
 
 	nextEvent = <-eventMsgChannel

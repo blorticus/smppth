@@ -102,7 +102,7 @@ func (handler *smscPeerMessageHandler) startHandlingPeerConnection(agentEventCha
 	}
 
 	handler.nameOfRemotePeer = handler.extractPeerNameFromTransceiverBind(pdus[0])
-	agentEventChannel <- &AgentEvent{RemotePeerName: handler.nameOfRemotePeer, SourceAgent: handler.parentSMSC, Type: ReceivedBind, SmppPDU: pdus[0]}
+	agentEventChannel <- &AgentEvent{RemotePeerName: handler.nameOfRemotePeer, SourceAgent: handler.parentSMSC, Type: ReceivedPDU, SmppPDU: pdus[0]}
 
 	bindResponsePDU := handler.sendTransceiverResponseToPeerBasedOnRequestBind(pdus[0])
 	handler.parentSMSC.notifySmscOfThisHandlersPeerName(handler.nameOfRemotePeer, handler)
@@ -110,7 +110,7 @@ func (handler *smscPeerMessageHandler) startHandlingPeerConnection(agentEventCha
 	agentEventChannel <- &AgentEvent{RemotePeerName: handler.nameOfRemotePeer, SourceAgent: handler.parentSMSC, Type: CompletedBind, SmppPDU: bindResponsePDU}
 
 	for i := 1; i < len(pdus); i++ {
-		agentEventChannel <- &AgentEvent{Type: ReceivedMessage, SmppPDU: pdus[i], RemotePeerName: handler.nameOfRemotePeer, SourceAgent: handler.parentSMSC}
+		agentEventChannel <- &AgentEvent{Type: ReceivedPDU, SmppPDU: pdus[i], RemotePeerName: handler.nameOfRemotePeer, SourceAgent: handler.parentSMSC}
 	}
 
 	for {
@@ -118,7 +118,7 @@ func (handler *smscPeerMessageHandler) startHandlingPeerConnection(agentEventCha
 		handler.parentSMSC.panicIfError(err)
 
 		for _, pdu := range pdus {
-			agentEventChannel <- &AgentEvent{Type: ReceivedMessage, SmppPDU: pdu, RemotePeerName: handler.nameOfRemotePeer, SourceAgent: handler.parentSMSC}
+			agentEventChannel <- &AgentEvent{Type: ReceivedPDU, SmppPDU: pdu, RemotePeerName: handler.nameOfRemotePeer, SourceAgent: handler.parentSMSC}
 		}
 	}
 }
