@@ -16,11 +16,10 @@ smpp-go provides methods for encoding and decoding SMPP PDUs.  smpp-test-harness
 adds SMPP Agents, which can operate as an ESME (meaning it initiates the outbound
 flow toward one or more peers) or an SMSC (meaning it listens for inbound
 flows from one or more peers).  An AgentGroup instance is responsible for
-launching a group of agents.  The AgentGroup provides a sender channel and is
-provided an event channel.  The sender channel receives messages that specify a
-PDU for an Agent to send, the Agent which should send it, and the peer to which the
-Agent should try to send the PDU.  When specific events happen on an Agent,
-the Agent sends a message on the event channel describing that event.  Events include:
+launching a group of agents and provides a method for routing
+PDUs to Agents for delivery to peers.  The AgentGroup also provides an event
+channel.  When specific events happen on an Agent, the Agent sends a message on
+the event channel describing that event.  Events include:
 
 * Receipt of a PDU from a peer
 * Delivery of a PDU to a peer
@@ -50,4 +49,7 @@ smpp-test-agent run esmes|smscs <path/to/config.yaml>
 
 `esmes` or `smscs` instructs the smpp-test-agent to start either the ESMEs specified in the
 YAML config (and initiate the declared outbound binds) or the SMSCs specified in
-the YAML config.
+the YAML config.  Each Agent will respond to an `enquire-link` with an `enquire-link-resp`,
+and a `submit-sm` with a `submit-sm-resp`.  In the `submit-sm-resp`, the message_id
+field is set the name of the agent, followed by a colon, followed by a monotonically
+incrementing integer.
