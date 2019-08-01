@@ -12,8 +12,8 @@ func TestBasicInteraction(t *testing.T) {
 	outputWriter := newMockWriter("output")
 	inputReader := newMockReader("input")
 
-	broker := NewTextInteractionBroker().SetInputPromptStream(promptWriter).SetInputReader(inputReader).SetOutputWriter(outputWriter)
-	msgSendChannel := broker.RetrieveSendMessageChannel()
+	agentGroup := NewAgentGroup([]Agent{})
+	broker := NewTextInteractionBroker(agentGroup).SetInputPromptStream(promptWriter).SetInputReader(inputReader).SetOutputWriter(outputWriter)
 
 	go broker.BeginInteractiveSession()
 

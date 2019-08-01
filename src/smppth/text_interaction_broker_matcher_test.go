@@ -8,10 +8,10 @@ import (
 func TestCommandMatcherEmptyDigestCommand(t *testing.T) {
 	matcher := newTextInteractionBrokerCommandMatcher()
 
-	matcher.digestCommand("")
+	digestedCommand := matcher.digestCommandString("")
 
-	if matcher.saysThisIsAValidSendCommand() {
-		t.Errorf("On empty digestCommand() matcher saysThisIsAValidSendCommand but should not")
+	if !digestedCommand.isNotValid {
+		t.Errorf("On empty digested string, should be not valid, but it")
 	}
 }
 
@@ -34,7 +34,7 @@ func TestValidSendCommands(t *testing.T) {
 func TestBreakSendCommandIntoStructWithoutParams(t *testing.T) {
 	matches, err := compareSendCommandStructsCreatedFrom("esme01: send submit-sm to smsc01", &textInteractionBrokerSendCommand{
 		commandParametersMap: map[string]string{},
-		commandTypeName:      "submit-sm",
+		smppCommandTypeName:  "submit-sm",
 		pduReceiverName:      "smsc01",
 		pduSenderName:        "esme01",
 	})
@@ -47,7 +47,7 @@ func TestBreakSendCommandIntoStructWithoutParams(t *testing.T) {
 func TestBreakSendCommandIntoStructWithSingleParam(t *testing.T) {
 	matches, err := compareSendCommandStructsCreatedFrom("esme01: send submit-sm to smsc01 short_message=\"this is a short message\"", &textInteractionBrokerSendCommand{
 		commandParametersMap: map[string]string{"short_message": "this is a short message"},
-		commandTypeName:      "submit-sm",
+		smppCommandTypeName:  "submit-sm",
 		pduReceiverName:      "smsc01",
 		pduSenderName:        "esme01",
 	})
@@ -60,7 +60,7 @@ func TestBreakSendCommandIntoStructWithSingleParam(t *testing.T) {
 func TestBreakSendCommandIntoStructWithThreeParams(t *testing.T) {
 	matches, err := compareSendCommandStructsCreatedFrom("esme01: send submit-sm to smsc01 short_message='this is a short message' dest_addr_ton=Private dest_addr=001100", &textInteractionBrokerSendCommand{
 		commandParametersMap: map[string]string{"short_message": "this is a short message", "dest_addr_ton": "Private", "dest_addr": "001100"},
-		commandTypeName:      "submit-sm",
+		smppCommandTypeName:  "submit-sm",
 		pduReceiverName:      "smsc01",
 		pduSenderName:        "esme01",
 	})
@@ -72,20 +72,26 @@ func TestBreakSendCommandIntoStructWithThreeParams(t *testing.T) {
 
 func compareSendCommandStructsCreatedFrom(command string, expected *textInteractionBrokerSendCommand) (bool, error) {
 	matcher := newTextInteractionBrokerCommandMatcher()
-	matcher.digestCommand(command)
+	digestedCommand := matcher.digestCommandString(command)
 
-	if !matcher.saysThisIsAValidSendCommand() {
+	if digestedCommand.isNotValid {
 		return false, fmt.Errorf("For command (%s), matcher says this is not a valid send command", command)
 	}
 
-	sendCommandStruct := matcher.breakSendCommandIntoStruct()
+	userInputCommandStruct := digestedCommand.compiledUserInputCommand
 
-	if sendCommandStruct == nil {
-		return false, fmt.Errorf("For command (%s), breakSendCommandIntoStruct() returns nil", command)
+	if userInputCommandStruct == nil {
+		return false, fmt.Errorf("For command (%s), compiledUserInputCommand is nil", command)
 	}
 
-	if sendCommandStruct.commandTypeName != expected.commandTypeName {
-		return false, fmt.Errorf("For command (%s) expected commandTypeName = (%s), got = (%s)", command, expected.commandTypeName, sendCommandStruct.commandTypeName)
+	sendCommandStruct := userInputCommandStruct.sendCommandInformation
+
+	if sendCommandStruct == nil {
+		return false, fmt.Errorf("For command (%s), sendcommandInformation is nil", command)
+	}
+
+	if sendCommandStruct.smppCommandTypeName != expected.smppCommandTypeName {
+		return false, fmt.Errorf("For command (%s) expected commandTypeName = (%s), got = (%s)", command, expected.smppCommandTypeName, sendCommandStruct.smppCommandTypeName)
 	}
 
 	if sendCommandStruct.pduReceiverName != expected.pduReceiverName {
@@ -121,6 +127,5 @@ func compareSendCommandStructsCreatedFrom(command string, expected *textInteract
 
 func cleanMatcherReportsThisIsAValidSetCommand(command string) bool {
 	matcher := newTextInteractionBrokerCommandMatcher()
-	matcher.digestCommand(command)
-	return matcher.saysThisIsAValidSendCommand()
+	return !matcher.digestCommandString(command).isNotValid
 }

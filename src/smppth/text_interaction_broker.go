@@ -4,135 +4,45 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"regexp"
 	"smpp"
 	"strings"
 )
 
-type textInteractionBrokerSendCommand struct {
-	pduSenderName        string
-	pduReceiverName      string
-	commandTypeName      string
-	commandParametersMap map[string]string
-}
-
-type textInteractionBrokerCommandMatcher struct {
-	digestingCommand                                string
-	sendCommandMatcher                              *regexp.Regexp
-	sendCommandParametersMatcher                    *regexp.Regexp
-	emptyParameterMatcher                           *regexp.Regexp
-	emptyLastParameterMatcher                       *regexp.Regexp
-	doubleQuotedParameterMatcher                    *regexp.Regexp
-	singleQuotedParameterMatcher                    *regexp.Regexp
-	unquotedParameterMatcher                        *regexp.Regexp
-	lastMatchStringSet                              []string
-	lastSendCommandParameterSetIncludedShortMessage bool
-}
-
-func newTextInteractionBrokerCommandMatcher() *textInteractionBrokerCommandMatcher {
-	return &textInteractionBrokerCommandMatcher{
-		digestingCommand:                                "",
-		sendCommandMatcher:                              regexp.MustCompile(`^(\S+?): send (\S+) to (\S+) *(.*)?$`),
-		sendCommandParametersMatcher:                    regexp.MustCompile(`^ *short_message="(.+?)" *$`),
-		emptyParameterMatcher:                           regexp.MustCompile(`^(\S+)=\s+`),
-		emptyLastParameterMatcher:                       regexp.MustCompile(`^(\S+)=$`),
-		doubleQuotedParameterMatcher:                    regexp.MustCompile(`^(\S+)="(.+?)"\s*`),
-		singleQuotedParameterMatcher:                    regexp.MustCompile(`^(\S+)='(.+?)'\s*`),
-		unquotedParameterMatcher:                        regexp.MustCompile(`^(\S+)=(\S+)\s*`),
-		lastMatchStringSet:                              []string{},
-		lastSendCommandParameterSetIncludedShortMessage: false,
-	}
-}
-
-func (matcher *textInteractionBrokerCommandMatcher) digestCommand(command string) {
-	matcher.digestingCommand = command
-}
-
-func (matcher *textInteractionBrokerCommandMatcher) saysThisIsAValidSendCommand() bool {
-	matcher.lastMatchStringSet = matcher.sendCommandMatcher.FindStringSubmatch(matcher.digestingCommand)
-
-	if len(matcher.lastMatchStringSet) > 0 {
-		return true
-	}
-
-	return false
-}
-
-func (matcher *textInteractionBrokerCommandMatcher) breakSendCommandIntoStruct() *textInteractionBrokerSendCommand {
-	return &textInteractionBrokerSendCommand{
-		pduSenderName:        matcher.lastMatchStringSet[1],
-		pduReceiverName:      matcher.lastMatchStringSet[3],
-		commandTypeName:      matcher.lastMatchStringSet[2],
-		commandParametersMap: matcher.breakParametersIntoMap(matcher.lastMatchStringSet[4]),
-	}
-}
-
-func (matcher *textInteractionBrokerCommandMatcher) breakParametersIntoMap(parameterString string) map[string]string {
-	parameterMap := make(map[string]string)
-
-	for len(parameterString) > 0 {
-		foundSomeTypeOfMatch := false
-
-		for _, compiledMatcher := range []*regexp.Regexp{matcher.emptyLastParameterMatcher, matcher.emptyParameterMatcher, matcher.doubleQuotedParameterMatcher, matcher.singleQuotedParameterMatcher, matcher.unquotedParameterMatcher} {
-			itDoesMatch, parameterName, parameterValue, parameterStringLength := matcher.extractMappableValueAndMatchingLengthFromMatcher(compiledMatcher, parameterString)
-
-			if itDoesMatch {
-				parameterMap[parameterName] = parameterValue
-				parameterString = parameterString[parameterStringLength:]
-				foundSomeTypeOfMatch = true
-				break
-			}
-		}
-
-		if !foundSomeTypeOfMatch {
-			break
-		}
-	}
-
-	return parameterMap
-}
-
-func (matcher *textInteractionBrokerCommandMatcher) extractMappableValueAndMatchingLengthFromMatcher(compiledRegexp *regexp.Regexp, parseString string) (doesMatch bool, name string, value string, matchLen int) {
-	groups := compiledRegexp.FindStringSubmatch(parseString)
-
-	if groups == nil {
-		return false, "", "", 0
-	}
-
-	if len(groups) == 2 {
-		return true, groups[1], "", len(groups[0])
-	}
-
-	return true, groups[1], groups[2], len(groups[0])
-}
-
-func (matcher *textInteractionBrokerCommandMatcher) saysThatSendCommandParametersContainedShortMessage() bool {
-	return matcher.lastSendCommandParameterSetIncludedShortMessage
-}
-
 // TextInteractionBroker connects to a reader, which accepts structured command messages, and a writer,
 // which emits events on behalf of testharness agents that have been started.
 type TextInteractionBroker struct {
-	channelOfPdusToSend chan *MessageDescriptor
-	outputWriter        io.Writer
-	inputReader         io.Reader
-	inputPromptStream   io.Writer
-	promptString        string
-	inputByteStream     []byte
-	commandMatcher      *textInteractionBrokerCommandMatcher
+	outputWriter       io.Writer
+	inputReader        io.Reader
+	inputPromptStream  io.Writer
+	promptString       string
+	inputByteStream    []byte
+	commandMatcher     *textInteractionBrokerCommandMatcher
+	useBuiltInOuputs   bool
+	proxyEventChannel  chan *AgentEvent
+	managedAgentsGroup *AgentGroup
 }
 
 // NewTextInteractionBroker creates an empty broker, where the prompt output stream is set to STDOUT,
-// the command input stream is set to STDIN, and the event output writer is set to STDOUT.
-func NewTextInteractionBroker() *TextInteractionBroker {
+// the command input stream is set to STDIN, and the event output writer is set to STDOUT.  Built-in
+// outputs are not used by default.
+func NewTextInteractionBroker(agentGroup *AgentGroup) *TextInteractionBroker {
 	return &TextInteractionBroker{
-		channelOfPdusToSend: make(chan *MessageDescriptor),
-		outputWriter:        os.Stdout,
-		inputReader:         os.Stdin,
-		inputPromptStream:   os.Stdout,
-		promptString:        "> ",
-		inputByteStream:     make([]byte, 9000),
+		managedAgentsGroup: agentGroup,
+		outputWriter:       os.Stdout,
+		inputReader:        os.Stdin,
+		inputPromptStream:  os.Stdout,
+		promptString:       "> ",
+		inputByteStream:    make([]byte, 9000),
+		useBuiltInOuputs:   false,
+		proxyEventChannel:  make(chan *AgentEvent),
 	}
+}
+
+// StartUsingBuiltInOutputs instructs the broker to generate the built-in outputs based on received
+// events and send message calls
+func (broker *TextInteractionBroker) StartUsingBuiltInOutputs() *TextInteractionBroker {
+	broker.useBuiltInOuputs = true
+	return broker
 }
 
 // SetInputReader sets the command input reader for the broker, and returns the broker so that
@@ -156,11 +66,26 @@ func (broker *TextInteractionBroker) SetOutputWriter(writer io.Writer) *TextInte
 	return broker
 }
 
-// RetrieveSendMessageChannel returns the MessageDescriptor channel, which is used by the broker
+// InstuctAgentToSendMessage pushes a message for delivery from a managed peer to one of its remote peers.  Emits message
+// on success or failure.  On failure, returns error from AgentGroup.
+func (broker *TextInteractionBroker) InstuctAgentToSendMessage(messageDescriptor *MessageDescriptor) error {
+	err := broker.managedAgentsGroup.RoutePduToAgentForSending(messageDescriptor.NameOfSourcePeer, messageDescriptor.NameOfRemotePeer, messageDescriptor.PDU)
+
+	if err != nil {
+		broker.NotifyThatErrorOccurredWhileTryingToSendMessage(err, messageDescriptor.PDU, messageDescriptor.NameOfSourcePeer, messageDescriptor.NameOfRemotePeer)
+		return err
+	}
+
+	broker.NotifyThatSmppPduWasSentToPeer(messageDescriptor.PDU, messageDescriptor.NameOfSourcePeer, messageDescriptor.NameOfRemotePeer)
+
+	return nil
+}
+
+// ProxyAgentEventChannel returns the MessageDescriptor channel, which is used by the broker
 // to accept MessageDescriptors.  These are routed to the appropriate testharness agents based
 // on the MessageDescriptor fields.
-func (broker *TextInteractionBroker) RetrieveSendMessageChannel() <-chan *MessageDescriptor {
-	return broker.channelOfPdusToSend
+func (broker *TextInteractionBroker) ProxyAgentEventChannel() <-chan *AgentEvent {
+	return broker.proxyEventChannel
 }
 
 // BeginInteractiveSession instructs the broker to send the prompt to the prompt output stream,
@@ -170,34 +95,30 @@ func (broker *TextInteractionBroker) BeginInteractiveSession() {
 	broker.commandMatcher = newTextInteractionBrokerCommandMatcher()
 
 	for {
-		nextCommand := broker.promptForNextCommand()
+	}
+}
 
-		if nextCommand == "help" {
-			broker.WriteOutHelp()
+func (broker *TextInteractionBroker) repeatedlyPromptTheUserForInput(userInputChannel chan<- *textInteractionBrokerValidUserInputCommand) {
+	commandMatcher := newTextInteractionBrokerCommandMatcher()
+
+	for {
+		nextCommandString := broker.promptForNextCommand()
+
+		digestedCommand := commandMatcher.digestCommandString(nextCommandString)
+
+		if digestedCommand.isNotValid {
+			broker.notifyThatUserProvidedCommandedIsInvalid(digestedCommand.reasonCommandIsNotValid)
 		} else {
-			broker.commandMatcher.digestCommand(nextCommand)
-			if broker.commandMatcher.saysThisIsAValidSendCommand() {
-				sendCommandStruct := broker.commandMatcher.breakSendCommandIntoStruct()
-
-				pdu, err := broker.createPduFromCommand(sendCommandStruct)
-
-				if err != nil {
-					broker.writeLine(err.Error())
-				} else {
-					broker.channelOfPdusToSend <- &MessageDescriptor{PDU: pdu, NameOfSourcePeer: sendCommandStruct.pduSenderName, NameOfRemotePeer: sendCommandStruct.pduReceiverName}
-				}
-			} else {
-				broker.writeLine("Command not understood")
-			}
+			userInputChannel <- digestedCommand.compiledUserInputCommand
 		}
 	}
 }
 
 func (broker *TextInteractionBroker) createPduFromCommand(commandDetails *textInteractionBrokerSendCommand) (*smpp.PDU, error) {
-	commandID, commandIDIsUnderstood := smpp.CommandIDFromString(commandDetails.commandTypeName)
+	commandID, commandIDIsUnderstood := smpp.CommandIDFromString(commandDetails.smppCommandTypeName)
 
 	if !commandIDIsUnderstood {
-		return nil, fmt.Errorf("Message command (%s) not understood", commandDetails.commandTypeName)
+		return nil, fmt.Errorf("PDU command (%s) not understood", commandDetails.smppCommandTypeName)
 	}
 
 	switch commandID {
@@ -207,7 +128,7 @@ func (broker *TextInteractionBroker) createPduFromCommand(commandDetails *textIn
 	case smpp.CommandSubmitSm:
 		return broker.attemptToMakeSubmitSmPdu(commandDetails.commandParametersMap)
 	default:
-		return nil, fmt.Errorf("While (%s) is a valid command, I don't know how to generate a PDU of that type", commandDetails.commandTypeName)
+		return nil, fmt.Errorf("While (%s) is a valid command, I don't know how to generate a PDU of that type", commandDetails.smppCommandTypeName)
 	}
 }
 
@@ -220,15 +141,15 @@ func (broker *TextInteractionBroker) attemptToMakeEnquireLinkPdu(commandParamete
 }
 
 func (broker *TextInteractionBroker) attemptToMakeSubmitSmPdu(commandParameterMap map[string]string) (*smpp.PDU, error) {
-	shortMessage, shortMessageIsInMap := commandParameterMap["short_message"]
-	destAddr, destAddrIsInMap := commandParameterMap["dest_addr"]
+	shortMessage, customShortMessageWasProvided := commandParameterMap["short_message"]
+	destAddr, customDestAddrWasProvided := commandParameterMap["dest_addr"]
 	destAddrNpi := uint8(0)
 
-	if !shortMessageIsInMap {
+	if !customShortMessageWasProvided {
 		shortMessage = "Sample Short Message"
 	}
 
-	if !destAddrIsInMap {
+	if !customDestAddrWasProvided {
 		destAddr = ""
 	} else {
 		destAddrNpi = uint8(9)
@@ -340,6 +261,10 @@ $esme_name: send submit-sm to $smsc_name short_message="$message" dest_addr=$add
 $esme_name: send enquire-link to $smsc_name
 `
 	broker.outputWriter.Write([]byte(helpText))
+}
+
+func (broker *TextInteractionBroker) notifyThatUserProvidedCommandedIsInvalid(reason string) {
+	broker.writeLine(fmt.Sprintf("[ERROR] command not understand: %s", reason))
 }
 
 func (broker *TextInteractionBroker) panicIfError(err error) {
