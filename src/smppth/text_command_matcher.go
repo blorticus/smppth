@@ -5,31 +5,23 @@ import "regexp"
 type digestedCommand struct {
 	isNotValid               bool
 	reasonCommandIsNotValid  string
-	compiledUserInputCommand *textInteractionBrokerValidUserInputCommand
+	compiledUserInputCommand *inputCommandDetails
 }
 
-type userInputCommandType int
-
-const (
-	helpCommand userInputCommandType = iota
-	sendCommand
-)
-
-type textInteractionBrokerSendCommand struct {
+type sendCommandDetails struct {
 	pduSenderName        string
 	pduReceiverName      string
 	smppCommandTypeName  string
 	commandParametersMap map[string]string
 }
 
-type textInteractionBrokerValidUserInputCommand struct {
-	commandType            userInputCommandType
+type inputCommandDetails struct {
+	commandType            UserCommandType
 	commandString          string
-	sendCommandInformation *textInteractionBrokerSendCommand
+	sendCommandInformation *sendCommandDetails
 }
 
-type textInteractionBrokerCommandMatcher struct {
-	//	digestingCommand                                string
+type textCommandMatcher struct {
 	helpCommandMatcher                              *regexp.Regexp
 	sendCommandMatcher                              *regexp.Regexp
 	sendCommandParametersMatcher                    *regexp.Regexp
@@ -42,9 +34,8 @@ type textInteractionBrokerCommandMatcher struct {
 	lastSendCommandParameterSetIncludedShortMessage bool
 }
 
-func newTextInteractionBrokerCommandMatcher() *textInteractionBrokerCommandMatcher {
-	return &textInteractionBrokerCommandMatcher{
-		//		digestingCommand:                                "",
+func newTextCommandMatcher() *textCommandMatcher {
+	return &textCommandMatcher{
 		helpCommandMatcher:                              regexp.MustCompile(`^help$`),
 		sendCommandMatcher:                              regexp.MustCompile(`^(\S+?): send (\S+) to (\S+) *(.*)?$`),
 		sendCommandParametersMatcher:                    regexp.MustCompile(`^ *short_message="(.+?)" *$`),
@@ -58,7 +49,7 @@ func newTextInteractionBrokerCommandMatcher() *textInteractionBrokerCommandMatch
 	}
 }
 
-func (matcher *textInteractionBrokerCommandMatcher) digestCommandString(command string) *digestedCommand {
+func (matcher *textCommandMatcher) digestCommandString(command string) *digestedCommand {
 	if digestedCommand := matcher.commandIsHelp(command); digestedCommand != nil {
 		return digestedCommand
 	}
@@ -70,14 +61,14 @@ func (matcher *textInteractionBrokerCommandMatcher) digestCommandString(command 
 	return &digestedCommand{isNotValid: true, reasonCommandIsNotValid: "command structure not understood", compiledUserInputCommand: nil}
 }
 
-func (matcher *textInteractionBrokerCommandMatcher) commandIsHelp(command string) *digestedCommand {
+func (matcher *textCommandMatcher) commandIsHelp(command string) *digestedCommand {
 	if matcher.helpCommandMatcher.Match([]byte(command)) {
 		return &digestedCommand{
 			isNotValid:              false,
 			reasonCommandIsNotValid: "",
-			compiledUserInputCommand: &textInteractionBrokerValidUserInputCommand{
+			compiledUserInputCommand: &inputCommandDetails{
 				commandString:          command,
-				commandType:            helpCommand,
+				commandType:            Help,
 				sendCommandInformation: nil,
 			},
 		}
@@ -86,7 +77,7 @@ func (matcher *textInteractionBrokerCommandMatcher) commandIsHelp(command string
 	return nil
 }
 
-func (matcher *textInteractionBrokerCommandMatcher) commandIsSend(command string) *digestedCommand {
+func (matcher *textCommandMatcher) commandIsSend(command string) *digestedCommand {
 	submatches := matcher.sendCommandMatcher.FindStringSubmatch(command)
 
 	if len(submatches) == 0 {
@@ -96,10 +87,10 @@ func (matcher *textInteractionBrokerCommandMatcher) commandIsSend(command string
 	return &digestedCommand{
 		isNotValid:              false,
 		reasonCommandIsNotValid: "",
-		compiledUserInputCommand: &textInteractionBrokerValidUserInputCommand{
+		compiledUserInputCommand: &inputCommandDetails{
 			commandString: command,
-			commandType:   helpCommand,
-			sendCommandInformation: &textInteractionBrokerSendCommand{
+			commandType:   Help,
+			sendCommandInformation: &sendCommandDetails{
 				pduSenderName:        submatches[1],
 				pduReceiverName:      submatches[3],
 				smppCommandTypeName:  submatches[2],
@@ -109,7 +100,7 @@ func (matcher *textInteractionBrokerCommandMatcher) commandIsSend(command string
 	}
 }
 
-func (matcher *textInteractionBrokerCommandMatcher) breakParametersIntoMap(parameterString string) map[string]string {
+func (matcher *textCommandMatcher) breakParametersIntoMap(parameterString string) map[string]string {
 	parameterMap := make(map[string]string)
 
 	for len(parameterString) > 0 {
@@ -134,7 +125,7 @@ func (matcher *textInteractionBrokerCommandMatcher) breakParametersIntoMap(param
 	return parameterMap
 }
 
-func (matcher *textInteractionBrokerCommandMatcher) extractMappableValueAndMatchingLengthFromMatcher(compiledRegexp *regexp.Regexp, parseString string) (doesMatch bool, name string, value string, matchLen int) {
+func (matcher *textCommandMatcher) extractMappableValueAndMatchingLengthFromMatcher(compiledRegexp *regexp.Regexp, parseString string) (doesMatch bool, name string, value string, matchLen int) {
 	groups := compiledRegexp.FindStringSubmatch(parseString)
 
 	if groups == nil {
@@ -147,7 +138,3 @@ func (matcher *textInteractionBrokerCommandMatcher) extractMappableValueAndMatch
 
 	return true, groups[1], groups[2], len(groups[0])
 }
-
-// func (matcher *textInteractionBrokerCommandMatcher) saysThatSendCommandParametersContainedShortMessage() bool {
-// 	return matcher.lastSendCommandParameterSetIncludedShortMessage
-// }
