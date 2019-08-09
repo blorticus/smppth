@@ -2,29 +2,41 @@ package smppth
 
 import (
 	"fmt"
+	"regexp"
 	"smpp"
 )
 
 type UserCommandType int
 
 const (
-	SendMessage = iota
+	SendPDU = iota
 	Help
-	InputError
 )
 
+type PeerDetails struct {
+	NameOfSendingAgent  string
+	NameOfReceivingPeer string
+}
+
 type UserCommand struct {
-	Command            UserCommandType
-	SendCommandPDUType smpp.CommandIDType
-	CommandParameters  map[string]string
-	InputErrorMessage  string
+	Type              UserCommandType
+	PduCommandIDType  smpp.CommandIDType
+	Peers             *PeerDetails
+	CommandParameters map[string]string
 }
 
 // TextCommandProcessor connects to a reader, which accepts structured command messages, and a writer,
 // which emits events on behalf of testharness agents that have been started.
 type TextCommandProcessor struct {
-	commandStringInputChannel  chan string
-	commandStructOutputChannel chan *UserCommand
+	helpCommandMatcher           *regexp.Regexp
+	sendCommandMatcher           *regexp.Regexp
+	sendCommandParametersMatcher *regexp.Regexp
+	emptyParameterMatcher        *regexp.Regexp
+	emptyLastParameterMatcher    *regexp.Regexp
+	doubleQuotedParameterMatcher *regexp.Regexp
+	singleQuotedParameterMatcher *regexp.Regexp
+	unquotedParameterMatcher     *regexp.Regexp
+	lastSetOfMatchGroupValues    []string
 }
 
 // NewTextCommandProcessor creates an empty broker, where the prompt output stream is set to STDOUT,
@@ -32,59 +44,110 @@ type TextCommandProcessor struct {
 // outputs are not used by default.
 func NewTextCommandProcessor() *TextCommandProcessor {
 	return &TextCommandProcessor{
-		commandStringInputChannel:  make(chan string),
-		commandStructOutputChannel: make(chan *UserCommand),
+		helpCommandMatcher:           regexp.MustCompile(`^help$`),
+		sendCommandMatcher:           regexp.MustCompile(`^(\S+?): send (\S+) to (\S+) *(.*)?$`),
+		sendCommandParametersMatcher: regexp.MustCompile(`^ *short_message="(.+?)" *$`),
+		emptyParameterMatcher:        regexp.MustCompile(`^(\S+)=\s+`),
+		emptyLastParameterMatcher:    regexp.MustCompile(`^(\S+)=$`),
+		doubleQuotedParameterMatcher: regexp.MustCompile(`^(\S+)="(.+?)"\s*`),
+		singleQuotedParameterMatcher: regexp.MustCompile(`^(\S+)='(.+?)'\s*`),
+		unquotedParameterMatcher:     regexp.MustCompile(`^(\S+)=(\S+)\s*`),
+		lastSetOfMatchGroupValues:    []string{},
 	}
 }
 
-// UserInteractionInputChannel returns a channel that accepts incoming user input command strings
-func (processor *TextCommandProcessor) UserInteractionInputChannel() <-chan string {
-	return processor.commandStringInputChannel
+func (processor *TextCommandProcessor) ConvertCommandLineStringToUserCommand(commandLine string) (*UserCommand, error) {
+	processor.lastSetOfMatchGroupValues = []string{}
+
+	if processor.thisIsTheHelpCommand(commandLine) {
+		return &UserCommand{
+			Type: Help,
+		}, nil
+	}
+
+	if processor.thisIsASendCommand(commandLine) {
+		smppCommandName := processor.lastSetOfMatchGroupValues[2]
+
+		smppCommandID, aValidCommandName := smpp.CommandIDFromString(smppCommandName)
+
+		if !aValidCommandName {
+			return nil, fmt.Errorf("Invalid smpp PDU type name (%s)", smppCommandName)
+		}
+
+		return &UserCommand{
+			Type:             SendPDU,
+			PduCommandIDType: smppCommandID,
+			Peers: &PeerDetails{
+				NameOfReceivingPeer: processor.lastSetOfMatchGroupValues[3],
+				NameOfSendingAgent:  processor.lastSetOfMatchGroupValues[1],
+			},
+			CommandParameters: processor.breakParametersIntoMap(processor.lastSetOfMatchGroupValues[4]),
+		}, nil
+	}
+
+	return nil, fmt.Errorf("Command not understood")
 }
 
-// ProcessedCommandOutputChannel returns a channel that contains structured command extracted
-// from the input channel strings.
-func (processor *TextCommandProcessor) ProcessedCommandOutputChannel() <-chan *UserCommand {
-	return processor.commandStructOutputChannel
+func (processor *TextCommandProcessor) CommandTextHelp() string {
+	return `
+$esme_name: send submit-sm to $smsc_name short_message="$message" dest_addr=$addr
+$esme_name: send enquire-link to $smsc_name
+`
 }
 
-// BeginInteractiveSession instructs the broker to send the prompt to the prompt output stream,
-// wait for a command on the command input stream, attempt to execute the command, and send any
-// results to the event output stream.  This cycle (prompt, read, write) is repeated indefinitely.
-func (processor *TextCommandProcessor) BeginInteractiveSession() {
-	commandMatcher := newTextCommandMatcher()
+func (processor *TextCommandProcessor) thisIsTheHelpCommand(commandLine string) bool {
+	return processor.helpCommandMatcher.Match([]byte(commandLine))
+}
 
-	for {
-		incomingUserCommandString := <-processor.commandStringInputChannel
+func (processor *TextCommandProcessor) thisIsASendCommand(commandLine string) bool {
+	submatches := processor.sendCommandMatcher.FindStringSubmatch(commandLine)
 
-		digestedCommand := commandMatcher.digestCommandString(incomingUserCommandString)
+	if len(submatches) > 0 {
+		processor.lastSetOfMatchGroupValues = submatches
+		return true
+	}
 
-		if digestedCommand.isNotValid {
-			processor.commandStructOutputChannel <- &UserCommand{
-				Command:           InputError,
-				InputErrorMessage: fmt.Sprintf("Invalid command: %s", digestedCommand.reasonCommandIsNotValid),
+	return false
+}
+
+func (processor *TextCommandProcessor) breakParametersIntoMap(parameterString string) map[string]string {
+	parameterMap := make(map[string]string)
+
+	for len(parameterString) > 0 {
+		foundSomeTypeOfMatch := false
+
+		for _, compiledMatcher := range []*regexp.Regexp{processor.emptyLastParameterMatcher, processor.emptyParameterMatcher, processor.doubleQuotedParameterMatcher, processor.singleQuotedParameterMatcher, processor.unquotedParameterMatcher} {
+			itDoesMatch, parameterName, parameterValue, parameterStringLength := processor.extractMappableValueAndMatchingLengthFromMatcher(compiledMatcher, parameterString)
+
+			if itDoesMatch {
+				parameterMap[parameterName] = parameterValue
+				parameterString = parameterString[parameterStringLength:]
+				foundSomeTypeOfMatch = true
+				break
 			}
-		} else {
-			
+		}
+
+		if !foundSomeTypeOfMatch {
+			break
 		}
 	}
+
+	return parameterMap
 }
 
-// func (broker *TextCommandProcessor) repeatedlyPromptTheUserForInput(userInputChannel chan<- *TextCommandProcessorValidUserInputCommand) {
-// 	commandMatcher := newTextCommandProcessorCommandMatcher()
+func (processor *TextCommandProcessor) extractMappableValueAndMatchingLengthFromMatcher(compiledRegexp *regexp.Regexp, parseString string) (doesMatch bool, name string, value string, matchLen int) {
+	groups := compiledRegexp.FindStringSubmatch(parseString)
 
-// 	for {
-// 		nextCommandString := broker.promptForNextCommand()
+	if groups == nil {
+		return false, "", "", 0
+	}
 
-// 		digestedCommand := commandMatcher.digestCommandString(nextCommandString)
+	if len(groups) == 2 {
+		return true, groups[1], "", len(groups[0])
+	}
 
-// 		if digestedCommand.isNotValid {
-// 			broker.notifyThatUserProvidedCommandedIsInvalid(digestedCommand.reasonCommandIsNotValid)
-// 		} else {
-// 			userInputChannel <- digestedCommand.compiledUserInputCommand
-// 		}
-// 	}
-// }
+	return true, groups[1], groups[2], len(groups[0])
+}
 
 // func (broker *TextCommandProcessor) CreatePduFromCommand(commandDetails *TextCommandProcessorSendCommand) (*smpp.PDU, error) {
 // 	commandID, commandIDIsValid := smpp.CommandIDFromString(commandDetails.smppCommandTypeName)
@@ -151,45 +214,6 @@ func (processor *TextCommandProcessor) BeginInteractiveSession() {
 // 		smpp.NewFLParameter(uint8(len(shortMessage))),
 // 		smpp.NewOctetStringFromString(shortMessage),
 // 	}, []*smpp.Parameter{}), nil
-// }
-
-// func (broker *TextCommandProcessor) promptForNextCommand() string {
-// 	if broker.inputPromptStream != nil {
-// 		broker.inputPromptStream.Write([]byte(broker.promptString))
-// 	}
-
-// 	input := broker.read()
-
-// 	if broker.inputByteStream[len(input)-1] != byte('\n') {
-// 		broker.writeLine("[ERROR] Command contains no newline or is too long.\n")
-// 		broker.discardInputUntilNewline()
-
-// 		return broker.promptForNextCommand()
-// 	}
-
-// 	return strings.TrimRight(string(input), "\n")
-// }
-
-// func (broker *TextCommandProcessor) read() string {
-// 	bytesRead, err := broker.inputReader.Read(broker.inputByteStream)
-// 	broker.panicIfError(err)
-
-// 	return string(broker.inputByteStream[:bytesRead])
-// }
-
-// func (broker *TextCommandProcessor) write(outputString string) {
-// 	_, err := broker.outputWriter.Write([]byte(outputString))
-// 	broker.panicIfError(err)
-// }
-
-// func (broker *TextCommandProcessor) writeLine(outputString string) {
-// 	broker.write(outputString)
-// 	broker.write("\n")
-// }
-
-// func (broker *TextCommandProcessor) discardInputUntilNewline() {
-// 	for input := broker.read(); input[len(input)-1] != byte('\n'); {
-// 	}
 // }
 
 // NotifyThatSmppPduWasReceived instructs the broker to write an output event message indicating that an SMPP PDU was received

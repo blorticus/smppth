@@ -4,13 +4,21 @@ import (
 	"log"
 	"os"
 	"path"
+	"smpp"
 	"smppth"
 )
 
 var errLogger *log.Logger
 
 func main() {
-	errLogger = initializeErrorLogger()
+	// fh, err := os.OpenFile("/tmp/output.log", os.O_CREATE|os.O_WRONLY, 0664)
+	// if err != nil {
+	// 	panic(fmt.Sprintf("Failed to open file for writing: %s", err))
+	// }
+
+	// debugLogger := log.New(fh, "", 0)
+
+	// errLogger = initializeErrorLogger()
 
 	// runAsEsmesOrSmscs, yamlConfigFileName := parseCommandLineOptions()
 
@@ -26,14 +34,39 @@ func main() {
 
 	// sharedAgentEventChannel := agentGroup.SharedAgentEventChannel()
 
+	textCommandProcessor := smppth.NewTextCommandProcessor()
+
 	ui := BuildUserInterface()
 	commandInputTextChannel := ui.UserInputStringCommandChannel()
+	// ui.AttachDebugLogger(debugLogger)
 
 	// agentGroup.StartAllAgents()
 
 	go func() {
+		//pduFactory := smppth.NewPduFactory()
+
 		for {
-			<-commandInputTextChannel
+			select {
+			case nextCommandLine := <-commandInputTextChannel:
+				structuredCommand, invalidCommandError := textCommandProcessor.ConvertCommandLineStringToUserCommand(nextCommandLine)
+				if invalidCommandError != nil {
+					ui.WriteOutputLine("Invalid command")
+				} else {
+					switch structuredCommand.Type {
+					case smppth.SendPDU:
+						switch structuredCommand.PduCommandIDType {
+						case smpp.CommandSubmitSm:
+
+						case smpp.CommandEnquireLink:
+						default:
+							ui.WriteOutputLine("I don't know how to generate a message of that type")
+						}
+					case smppth.Help:
+						ui.WriteOutputLine(textCommandProcessor.CommandTextHelp())
+					}
+				}
+				//case incomingEvent := <-sharedAgentEventChannel:
+			}
 		}
 	}()
 
