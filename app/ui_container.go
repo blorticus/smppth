@@ -18,8 +18,7 @@ type TestHarnessTextUI struct {
 	userCommandInputField      *tview.InputField
 	eventOutputTextView        *tview.TextView
 	userInputStringChannel     chan string
-	commandTextEntryQueue      *simpleStringCircularQueue
-	commandIterator            *simpleCircularQueueIterator
+	commandReadlineHistory     *readlineHistory
 	debugLogger                *log.Logger
 }
 
@@ -27,8 +26,7 @@ type TestHarnessTextUI struct {
 func BuildUserInterface() *TestHarnessTextUI {
 	ui := &TestHarnessTextUI{
 		userInputStringChannel: make(chan string),
-		commandTextEntryQueue:  NewSimpleStringCircularBuffer(10),
-		commandIterator:        nil,
+		commandReadlineHistory: newReadlineHistory(200),
 		debugLogger:            nil,
 	}
 
@@ -63,6 +61,8 @@ func (ui *TestHarnessTextUI) createCommandInputField() *TestHarnessTextUI {
 		SetFieldBackgroundColor(tcell.ColorBlack).
 		SetFieldWidth(100).
 		SetDoneFunc(func(key tcell.Key) {
+			ui.commandReadlineHistory.AddItem(ui.userCommandInputField.GetText())
+			ui.commandReadlineHistory.ResetIteration()
 			if key == tcell.KeyEnter {
 				if ui.userCommandHistoryTextView.GetText(false) == "" {
 					fmt.Fprintf(ui.userCommandHistoryTextView, ui.userCommandInputField.GetText())
@@ -73,6 +73,22 @@ func (ui *TestHarnessTextUI) createCommandInputField() *TestHarnessTextUI {
 				ui.tviewApplication.Draw()
 			}
 		})
+
+	ui.userCommandInputField.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyUp {
+			if commandFromHistory, thereWereMoreCommandsInHistory := ui.commandReadlineHistory.Up(); thereWereMoreCommandsInHistory {
+				ui.userCommandInputField.SetText(commandFromHistory)
+			}
+			return nil
+		} else if event.Key() == tcell.KeyDown {
+			if commandFromHistory, wasNotYetAtFirstCommand := ui.commandReadlineHistory.Down(); wasNotYetAtFirstCommand {
+				ui.userCommandInputField.SetText(commandFromHistory)
+			}
+			return nil
+		} else {
+			return event
+		}
+	})
 
 	return ui
 }
@@ -198,10 +214,13 @@ func (queue *simpleStringCircularQueue) PutItemAtEnd(item string) {
 	}
 }
 
-func (queue *simpleStringCircularQueue) HasNoItems() bool {
+func (queue *simpleStringCircularQueue) IsEmpty() bool {
 	return queue.countOfItemsInQueue == 0
 }
 
+func (queue *simpleStringCircularQueue) IsNotEmpty() bool {
+	return queue.countOfItemsInQueue != 0
+}
 func (queue *simpleStringCircularQueue) NumberOfItemsInTheQueue() uint {
 	return queue.countOfItemsInQueue
 }
@@ -219,71 +238,66 @@ func (queue *simpleStringCircularQueue) GetItemAtIndex(index uint) (item string,
 	return queue.stringSlice[sliceIndexOfItem], true
 }
 
-func (queue *simpleStringCircularQueue) GenerateNewIterator() *simpleCircularQueueIterator {
-	return newSimpleStringCircularIterator(queue)
+type readlineHistory struct {
+	attachedQueue           *simpleStringCircularQueue
+	indexOfLastItemReturned uint
+	iterationHasStarted     bool
 }
 
-type simpleCircularQueueIterator struct {
-	attachedQueue       *simpleStringCircularQueue
-	currentIndexPtr     uint
-	iterationHasStarted bool
-	previousStartsAtEnd bool
-}
-
-func newSimpleStringCircularIterator(forQueue *simpleStringCircularQueue) *simpleCircularQueueIterator {
-	return &simpleCircularQueueIterator{
-		attachedQueue:       forQueue,
-		currentIndexPtr:     0,
-		iterationHasStarted: false,
-		previousStartsAtEnd: false,
+func newReadlineHistory(maximumHistoryEntries uint) *readlineHistory {
+	return &readlineHistory{
+		attachedQueue:           NewSimpleStringCircularBuffer(maximumHistoryEntries),
+		indexOfLastItemReturned: 0,
+		iterationHasStarted:     false,
 	}
 }
 
-func (iter *simpleCircularQueueIterator) PreviousStartsAtEnd() *simpleCircularQueueIterator {
-	iter.previousStartsAtEnd = true
-	return iter
-}
-
-func (iter *simpleCircularQueueIterator) Next() string {
-	if iter.iterationHasStarted {
-		if iter.attachedQueue.NumberOfItemsInTheQueue() > iter.currentIndexPtr+1 {
-			iter.currentIndexPtr++
-		}
-	} else {
-		if iter.attachedQueue.NumberOfItemsInTheQueue() > 0 {
-			iter.currentIndexPtr = 0
-			iter.iterationHasStarted = true
-		}
-	}
-
-	if iter.iterationHasStarted {
-		v, _ := iter.attachedQueue.GetItemAtIndex(iter.currentIndexPtr)
-		return v
-	}
-
-	return ""
-}
-
-func (iter *simpleCircularQueueIterator) Previous() string {
-	if iter.iterationHasStarted {
-		if iter.currentIndexPtr > 0 {
-			iter.currentIndexPtr--
-		}
-	} else {
-		if iter.attachedQueue.NumberOfItemsInTheQueue() > 0 {
-			if iter.previousStartsAtEnd {
-				iter.currentIndexPtr = iter.attachedQueue.NumberOfItemsInTheQueue() - 1
-			} else {
-				iter.currentIndexPtr = 0
+func (history *readlineHistory) Up() (historyItem string, wasNotYetAtTopOfList bool) {
+	if history.attachedQueue.IsNotEmpty() {
+		if history.iterationHasStarted {
+			if history.iteratorIsNotAtStartOfHistoryList() {
+				v, _ := history.attachedQueue.GetItemAtIndex(history.indexOfLastItemReturned - 1)
+				history.indexOfLastItemReturned--
+				return v, true
 			}
-			iter.iterationHasStarted = true
+		} else {
+			history.iterationHasStarted = true
+			v, _ := history.attachedQueue.GetItemAtIndex(history.attachedQueue.NumberOfItemsInTheQueue() - 1)
+			history.indexOfLastItemReturned = history.attachedQueue.NumberOfItemsInTheQueue() - 1
+			return v, true
 		}
 	}
 
-	if iter.iterationHasStarted {
-		v, _ := iter.attachedQueue.GetItemAtIndex(iter.currentIndexPtr)
-		return v
+	return "", false
+}
+
+func (history *readlineHistory) Down() (historyItem string, wasNotYetAtBottomOfList bool) {
+	if history.attachedQueue.IsNotEmpty() {
+		if history.iterationHasStarted {
+			if history.iteratorIsNotAtEndOfHistoryList() {
+				v, _ := history.attachedQueue.GetItemAtIndex(history.indexOfLastItemReturned + 1)
+				history.indexOfLastItemReturned++
+				return v, true
+			}
+		}
 	}
 
-	return ""
+	return "", false
+}
+
+func (history *readlineHistory) iteratorIsNotAtEndOfHistoryList() bool {
+	return history.attachedQueue.NumberOfItemsInTheQueue() > history.indexOfLastItemReturned+1
+}
+
+func (history *readlineHistory) iteratorIsNotAtStartOfHistoryList() bool {
+	return history.indexOfLastItemReturned != 0
+}
+
+func (history *readlineHistory) ResetIteration() {
+	history.indexOfLastItemReturned = 0
+	history.iterationHasStarted = false
+}
+
+func (history *readlineHistory) AddItem(item string) {
+	history.attachedQueue.PutItemAtEnd(item)
 }

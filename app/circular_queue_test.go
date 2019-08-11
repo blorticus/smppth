@@ -5,8 +5,12 @@ import "testing"
 func TestCircularQueueProgression(t *testing.T) {
 	q := NewSimpleStringCircularBuffer(5)
 
-	if !q.HasNoItems() {
-		t.Errorf("On empty queue, HasNoItems returns false")
+	if !q.IsEmpty() {
+		t.Errorf("On empty queue, IsEmpty returns false")
+	}
+
+	if q.IsNotEmpty() {
+		t.Errorf("On empty queue, IsNotEmpty returns true")
 	}
 
 	if q.NumberOfItemsInTheQueue() != 0 {
@@ -17,10 +21,13 @@ func TestCircularQueueProgression(t *testing.T) {
 	for expectedInsertIndex, value := range stringSet {
 		q.PutItemAtEnd(value)
 
-		if q.HasNoItems() {
-			t.Errorf("On insert number %d, HasNoItems() returns true", expectedInsertIndex+1)
+		if q.IsEmpty() {
+			t.Errorf("On insert number %d, IsEmpty() returns true", expectedInsertIndex+1)
 		}
 
+		if !q.IsNotEmpty() {
+			t.Errorf("On insert number %d, IsNotEmpty() returns false", expectedInsertIndex+1)
+		}
 		if q.NumberOfItemsInTheQueue() != uint(expectedInsertIndex)+1 {
 			t.Errorf("On insert number %d, expected NumberOfItemsInTheQueue() == %d, got = %d", expectedInsertIndex+1, expectedInsertIndex+1, q.NumberOfItemsInTheQueue())
 		}
