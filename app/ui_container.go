@@ -143,7 +143,10 @@ func (ui *TestHarnessTextUI) UserInputStringCommandChannel() <-chan string {
 	return ui.userInputStringChannel
 }
 
-func (ui *TestHarnessTextUI) WriteOutputLine(line string) {
+// WriteLineToEventBox writes a string to the UI event box, treating it as a line
+// This means the next string line written will have a newline between it (the next
+// string, that is) and the line written here
+func (ui *TestHarnessTextUI) WriteLineToEventBox(line string) {
 	if ui.eventOutputTextView.GetText(false) == "" {
 		fmt.Fprintf(ui.eventOutputTextView, line)
 	} else {
@@ -173,7 +176,8 @@ func (ui *TestHarnessTextUI) debugLogPrintf(format string, v ...interface{}) {
 	}
 }
 
-type simpleStringCircularQueue struct {
+// SimpleStringCircularQueue is a simple circular buffer of strings
+type SimpleStringCircularQueue struct {
 	stringSlice             []string
 	capacity                uint
 	headIndex               uint
@@ -182,8 +186,10 @@ type simpleStringCircularQueue struct {
 	countOfItemsInQueue     uint
 }
 
-func NewSimpleStringCircularBuffer(capacity uint) *simpleStringCircularQueue {
-	return &simpleStringCircularQueue{
+// NewSimpleStringCircularBuffer creates a simple circular buffer of strings, with
+// the queue holding up to 'capacity' number of items.
+func NewSimpleStringCircularBuffer(capacity uint) *SimpleStringCircularQueue {
+	return &SimpleStringCircularQueue{
 		stringSlice:             make([]string, capacity),
 		headIndex:               0,
 		indexOfNextInsert:       0,
@@ -192,7 +198,8 @@ func NewSimpleStringCircularBuffer(capacity uint) *simpleStringCircularQueue {
 	}
 }
 
-func (queue *simpleStringCircularQueue) PutItemAtEnd(item string) {
+// PutItemAtEnd places an item at the end of the circular queue
+func (queue *SimpleStringCircularQueue) PutItemAtEnd(item string) {
 	if queue.countOfItemsInQueue > 0 && queue.indexOfNextInsert == queue.headIndex {
 		if queue.headIndex == queue.indexOfLastSliceElement {
 			queue.headIndex = 0
@@ -214,18 +221,23 @@ func (queue *simpleStringCircularQueue) PutItemAtEnd(item string) {
 	}
 }
 
-func (queue *simpleStringCircularQueue) IsEmpty() bool {
+// IsEmpty returns true if the queue has no items in it; false otherwise
+func (queue *SimpleStringCircularQueue) IsEmpty() bool {
 	return queue.countOfItemsInQueue == 0
 }
 
-func (queue *simpleStringCircularQueue) IsNotEmpty() bool {
+// IsNotEmpty returns true if the queue has at least one item in it; false otherwise
+func (queue *SimpleStringCircularQueue) IsNotEmpty() bool {
 	return queue.countOfItemsInQueue != 0
 }
-func (queue *simpleStringCircularQueue) NumberOfItemsInTheQueue() uint {
+
+// NumberOfItemsInTheQueue returns a count of the number of items in the queue
+func (queue *SimpleStringCircularQueue) NumberOfItemsInTheQueue() uint {
 	return queue.countOfItemsInQueue
 }
 
-func (queue *simpleStringCircularQueue) GetItemAtIndex(index uint) (item string, thereIsAnItemAtThatIndex bool) {
+// GetItemAtIndex retrieves the string at the specified index (0 is the first item)
+func (queue *SimpleStringCircularQueue) GetItemAtIndex(index uint) (item string, thereIsAnItemAtThatIndex bool) {
 	if queue.countOfItemsInQueue == 0 || index > queue.countOfItemsInQueue-1 {
 		return "", false
 	}
@@ -239,7 +251,7 @@ func (queue *simpleStringCircularQueue) GetItemAtIndex(index uint) (item string,
 }
 
 type readlineHistory struct {
-	attachedQueue           *simpleStringCircularQueue
+	attachedQueue           *SimpleStringCircularQueue
 	indexOfLastItemReturned uint
 	iterationHasStarted     bool
 }

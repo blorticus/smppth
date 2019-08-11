@@ -50,7 +50,7 @@ func main() {
 			case nextCommandLine := <-commandInputTextChannel:
 				structuredCommand, invalidCommandError := textCommandProcessor.ConvertCommandLineStringToUserCommand(nextCommandLine)
 				if invalidCommandError != nil {
-					ui.WriteOutputLine("Invalid command")
+					ui.WriteLineToEventBox("Invalid command")
 				} else {
 					switch structuredCommand.Type {
 					case smppth.SendPDU:
@@ -59,10 +59,10 @@ func main() {
 
 						case smpp.CommandEnquireLink:
 						default:
-							ui.WriteOutputLine("I don't know how to generate a message of that type")
+							ui.WriteLineToEventBox("I don't know how to generate a message of that type")
 						}
 					case smppth.Help:
-						ui.WriteOutputLine(textCommandProcessor.CommandTextHelp())
+						ui.WriteLineToEventBox(textCommandProcessor.CommandTextHelp())
 					}
 				}
 				//case incomingEvent := <-sharedAgentEventChannel:
