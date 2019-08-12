@@ -2,6 +2,7 @@ package smppth
 
 import (
 	"fmt"
+	"reflect"
 	"smpp"
 	"testing"
 )
@@ -40,24 +41,24 @@ func TestValidSendCommandsWithoutParameters(t *testing.T) {
 		&sendCommandCompare{
 			commandToTest: "foo: send submit-sm to bar",
 			expectedStruct: &UserCommand{
-				Type:              SendPDU,
-				PduCommandIDType:  smpp.CommandSubmitSm,
-				CommandParameters: make(map[string]string),
-				Peers: &PeerDetails{
-					NameOfReceivingPeer: "bar",
-					NameOfSendingAgent:  "foo",
+				Type: SendPDU,
+				Details: &SendPduDetails{
+					TypeOfSmppPDU:                  smpp.CommandSubmitSm,
+					StringParametersMap:            make(map[string]string),
+					NameOfPeerThatShouldReceivePdu: "bar",
+					NameOfAgentThatWillSendPdu:     "foo",
 				},
 			},
 		},
 		&sendCommandCompare{
 			commandToTest: "foo: send enquire-link to bar",
 			expectedStruct: &UserCommand{
-				Type:              SendPDU,
-				PduCommandIDType:  smpp.CommandEnquireLink,
-				CommandParameters: make(map[string]string),
-				Peers: &PeerDetails{
-					NameOfReceivingPeer: "bar",
-					NameOfSendingAgent:  "foo",
+				Type: SendPDU,
+				Details: &SendPduDetails{
+					TypeOfSmppPDU:                  smpp.CommandEnquireLink,
+					StringParametersMap:            make(map[string]string),
+					NameOfPeerThatShouldReceivePdu: "bar",
+					NameOfAgentThatWillSendPdu:     "foo",
 				},
 			},
 		},
@@ -83,24 +84,24 @@ func TestValidSendCommandsWithParameters(t *testing.T) {
 		&sendCommandCompare{
 			commandToTest: `foo: send submit-sm to bar short_message="This is a short message" dest_addr=001100`,
 			expectedStruct: &UserCommand{
-				Type:              SendPDU,
-				PduCommandIDType:  smpp.CommandSubmitSm,
-				CommandParameters: map[string]string{"short_message": "This is a short message", "dest_addr": "001100"},
-				Peers: &PeerDetails{
-					NameOfReceivingPeer: "bar",
-					NameOfSendingAgent:  "foo",
+				Type: SendPDU,
+				Details: &SendPduDetails{
+					TypeOfSmppPDU:                  smpp.CommandSubmitSm,
+					StringParametersMap:            map[string]string{"short_message": "This is a short message", "dest_addr": "001100"},
+					NameOfPeerThatShouldReceivePdu: "bar",
+					NameOfAgentThatWillSendPdu:     "foo",
 				},
 			},
 		},
 		&sendCommandCompare{
 			commandToTest: `foo: send enquire-link to bar alpha= beta=gamma`,
 			expectedStruct: &UserCommand{
-				Type:              SendPDU,
-				PduCommandIDType:  smpp.CommandEnquireLink,
-				CommandParameters: map[string]string{"alpha": "", "beta": "gamma"},
-				Peers: &PeerDetails{
-					NameOfReceivingPeer: "bar",
-					NameOfSendingAgent:  "foo",
+				Type: SendPDU,
+				Details: &SendPduDetails{
+					TypeOfSmppPDU:                  smpp.CommandEnquireLink,
+					StringParametersMap:            map[string]string{"alpha": "", "beta": "gamma"},
+					NameOfPeerThatShouldReceivePdu: "bar",
+					NameOfAgentThatWillSendPdu:     "foo",
 				},
 			},
 		},
@@ -138,35 +139,38 @@ func compareUserCommandStructsForSendCommand(expected *UserCommand, got *UserCom
 		return fmt.Errorf("Expected Type = (%d), got = (%d)", int(expected.Type), int(got.Type))
 	}
 
-	if expected.PduCommandIDType != got.PduCommandIDType {
-		return fmt.Errorf("Expected PduCommandIDType = ([%d] %s), got = ([%d] %s)", int(expected.PduCommandIDType), smpp.CommandName(expected.PduCommandIDType), int(got.PduCommandIDType), smpp.CommandName(got.PduCommandIDType))
+	if reflect.TypeOf(got.Details).Elem().Name() != "SendPduDetails" {
+		return fmt.Errorf("Expected Details from received struct to be (SendPduDetails), got = (%s)", reflect.TypeOf(got.Details).Name())
 	}
 
-	if got.Peers == nil {
-		return fmt.Errorf("Got nil Peers value")
+	expectedDetails := expected.Details.(*SendPduDetails)
+	gotDetails := got.Details.(*SendPduDetails)
+
+	if expectedDetails.TypeOfSmppPDU != gotDetails.TypeOfSmppPDU {
+		return fmt.Errorf("Expected PduCommandIDType = ([%d] %s), got = ([%d] %s)", int(expectedDetails.TypeOfSmppPDU), smpp.CommandName(expectedDetails.TypeOfSmppPDU), int(gotDetails.TypeOfSmppPDU), smpp.CommandName(gotDetails.TypeOfSmppPDU))
 	}
 
-	if expected.Peers.NameOfSendingAgent != got.Peers.NameOfSendingAgent {
-		return fmt.Errorf("Expected Peers.NameOfSendingAgent = (%s), got = (%s)", expected.Peers.NameOfSendingAgent, got.Peers.NameOfSendingAgent)
+	if expectedDetails.NameOfAgentThatWillSendPdu != gotDetails.NameOfAgentThatWillSendPdu {
+		return fmt.Errorf("Expected NameOfAgentThatWillSendPdu = (%s), got = (%s)", expectedDetails.NameOfAgentThatWillSendPdu, gotDetails.NameOfAgentThatWillSendPdu)
 	}
 
-	if expected.Peers.NameOfReceivingPeer != got.Peers.NameOfReceivingPeer {
-		return fmt.Errorf("Expected Peers.NameOfSendingAgent = (%s), got = (%s)", expected.Peers.NameOfReceivingPeer, got.Peers.NameOfReceivingPeer)
+	if expectedDetails.NameOfPeerThatShouldReceivePdu != gotDetails.NameOfPeerThatShouldReceivePdu {
+		return fmt.Errorf("Expected NameOfPeerThatShouldReceivePdu = (%s), got = (%s)", expectedDetails.NameOfPeerThatShouldReceivePdu, gotDetails.NameOfPeerThatShouldReceivePdu)
 	}
 
-	if len(expected.CommandParameters) != len(got.CommandParameters) {
-		return fmt.Errorf("Expected %d entries in CommandParameters map, got = %d", len(expected.CommandParameters), len(got.CommandParameters))
+	if len(expectedDetails.StringParametersMap) != len(gotDetails.StringParametersMap) {
+		return fmt.Errorf("Expected %d entries in StringParametersMap map, got = %d", len(expectedDetails.StringParametersMap), len(gotDetails.StringParametersMap))
 	}
 
-	for k, v := range expected.CommandParameters {
-		gv, hasKey := got.CommandParameters[k]
+	for k, v := range expectedDetails.StringParametersMap {
+		gv, hasKey := gotDetails.StringParametersMap[k]
 
 		if !hasKey {
-			return fmt.Errorf("Expected CommandParameters key (%s), but did not get that key", k)
+			return fmt.Errorf("Expected StringParametersMap key (%s), but did not get that key", k)
 		}
 
 		if v != gv {
-			return fmt.Errorf("Expected value (%s) for CommandParameter with key (%s), got value = (%s)", v, k, gv)
+			return fmt.Errorf("Expected value (%s) for StringParametersMap with key (%s), got value = (%s)", v, k, gv)
 		}
 	}
 

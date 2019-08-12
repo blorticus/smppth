@@ -1,76 +1,59 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path"
-	"smpp"
 	"smppth"
 )
 
 var errLogger *log.Logger
 
 func main() {
-	// fh, err := os.OpenFile("/tmp/output.log", os.O_CREATE|os.O_WRONLY, 0664)
-	// if err != nil {
-	// 	panic(fmt.Sprintf("Failed to open file for writing: %s", err))
-	// }
+	errLogger = initializeErrorLogger()
 
-	// debugLogger := log.New(fh, "", 0)
+	runAsEsmesOrSmscs, yamlConfigFileName := parseCommandLineOptions()
 
-	// errLogger = initializeErrorLogger()
+	esmes, smscs, err := smppth.NewApplicationConfigYamlReader().ParseFile(yamlConfigFileName)
+	fatalOutsideUIOnErr(err)
 
-	// runAsEsmesOrSmscs, yamlConfigFileName := parseCommandLineOptions()
-
-	// esmes, smscs, err := smppth.NewApplicationConfigYamlReader().ParseFile(yamlConfigFileName)
-	// fatalOutsideUIOnErr(err)
-
-	// var agentGroup *smppth.AgentGroup
-	// if runAsEsmesOrSmscs == "esmes" {
-	// 	agentGroup = generateEsmeAgentGroup(esmes, smscs)
-	// } else {
-	// 	agentGroup = generateSmscAgentGroup(esmes, smscs)
-	// }
-
-	// sharedAgentEventChannel := agentGroup.SharedAgentEventChannel()
-
-	textCommandProcessor := smppth.NewTextCommandProcessor()
+	var agentGroup *smppth.AgentGroup
+	if runAsEsmesOrSmscs == "esmes" {
+		agentGroup = generateEsmeAgentGroup(esmes)
+	} else {
+		agentGroup = generateSmscAgentGroup(smscs)
+	}
 
 	ui := BuildUserInterface()
 	commandInputTextChannel := ui.UserInputStringCommandChannel()
-	// ui.AttachDebugLogger(debugLogger)
 
-	// agentGroup.StartAllAgents()
+	application := smppth.NewStandardApplication().
+		SetPduFactory(smppth.NewDefaultPduFactory()).
+		SetOutputGenerator(smppth.NewStandardOutputGenerator()).
+		SetEventOutputWriter(ui)
+	application.AttachEventChannel(agentGroup.SharedAgentEventChannel())
 
-	go func() {
-		//pduFactory := smppth.NewPduFactory()
-
-		for {
-			select {
-			case nextCommandLine := <-commandInputTextChannel:
-				structuredCommand, invalidCommandError := textCommandProcessor.ConvertCommandLineStringToUserCommand(nextCommandLine)
-				if invalidCommandError != nil {
-					ui.WriteLineToEventBox("Invalid command")
-				} else {
-					switch structuredCommand.Type {
-					case smppth.SendPDU:
-						switch structuredCommand.PduCommandIDType {
-						case smpp.CommandSubmitSm:
-
-						case smpp.CommandEnquireLink:
-						default:
-							ui.WriteLineToEventBox("I don't know how to generate a message of that type")
-						}
-					case smppth.Help:
-						ui.WriteLineToEventBox(textCommandProcessor.CommandTextHelp())
-					}
-				}
-				//case incomingEvent := <-sharedAgentEventChannel:
-			}
-		}
-	}()
+	go application.Start()
+	go startListeningForUserCommands(commandInputTextChannel, ui, application)
+	agentGroup.StartAllAgents()
 
 	ui.StartRunning()
+}
+
+func startListeningForUserCommands(commandInputTextChannel <-chan string, ui *TestHarnessTextUI, app *smppth.StandardApplication) {
+	textCommandProcessor := smppth.NewTextCommandProcessor()
+
+	for {
+		nextUserCommand := <-commandInputTextChannel
+		userCommandStruct, err := textCommandProcessor.ConvertCommandLineStringToUserCommand(nextUserCommand)
+
+		if err != nil {
+			ui.WriteLineToEventBox(fmt.Sprintf("[ERROR] Invalid command (%s)", nextUserCommand))
+		} else {
+			app.ReceiveNextCommand(userCommandStruct)
+		}
+	}
 
 }
 
@@ -90,12 +73,20 @@ func parseCommandLineOptions() (esmesOrSmscs string, yamlConfigFileName string) 
 	return os.Args[2], os.Args[3]
 }
 
-func generateEsmeAgentGroup(esmes []*smppth.ESME, smscs []*smppth.SMSC) *smppth.AgentGroup {
-	return nil
+func generateEsmeAgentGroup(esmes []*smppth.ESME) *smppth.AgentGroup {
+	agents := make([]smppth.Agent, len(esmes))
+	for i, v := range esmes {
+		agents[i] = v
+	}
+	return smppth.NewAgentGroup(agents)
 }
 
-func generateSmscAgentGroup(esmes []*smppth.ESME, smscs []*smppth.SMSC) *smppth.AgentGroup {
-	return nil
+func generateSmscAgentGroup(smscs []*smppth.SMSC) *smppth.AgentGroup {
+	agents := make([]smppth.Agent, len(smscs))
+	for i, v := range smscs {
+		agents[i] = v
+	}
+	return smppth.NewAgentGroup(agents)
 }
 
 func panicOnErr(err error) {

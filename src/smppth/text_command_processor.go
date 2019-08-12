@@ -6,25 +6,6 @@ import (
 	"smpp"
 )
 
-type UserCommandType int
-
-const (
-	SendPDU = iota
-	Help
-)
-
-type PeerDetails struct {
-	NameOfSendingAgent  string
-	NameOfReceivingPeer string
-}
-
-type UserCommand struct {
-	Type              UserCommandType
-	PduCommandIDType  smpp.CommandIDType
-	Peers             *PeerDetails
-	CommandParameters map[string]string
-}
-
 // TextCommandProcessor connects to a reader, which accepts structured command messages, and a writer,
 // which emits events on behalf of testharness agents that have been started.
 type TextCommandProcessor struct {
@@ -75,13 +56,13 @@ func (processor *TextCommandProcessor) ConvertCommandLineStringToUserCommand(com
 		}
 
 		return &UserCommand{
-			Type:             SendPDU,
-			PduCommandIDType: smppCommandID,
-			Peers: &PeerDetails{
-				NameOfReceivingPeer: processor.lastSetOfMatchGroupValues[3],
-				NameOfSendingAgent:  processor.lastSetOfMatchGroupValues[1],
+			Type: SendPDU,
+			Details: &SendPduDetails{
+				NameOfAgentThatWillSendPdu:     processor.lastSetOfMatchGroupValues[1],
+				NameOfPeerThatShouldReceivePdu: processor.lastSetOfMatchGroupValues[3],
+				TypeOfSmppPDU:                  smppCommandID,
+				StringParametersMap:            processor.breakParametersIntoMap(processor.lastSetOfMatchGroupValues[4]),
 			},
-			CommandParameters: processor.breakParametersIntoMap(processor.lastSetOfMatchGroupValues[4]),
 		}, nil
 	}
 

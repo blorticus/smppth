@@ -155,6 +155,11 @@ func (ui *TestHarnessTextUI) WriteLineToEventBox(line string) {
 	ui.tviewApplication.Draw()
 }
 
+func (ui *TestHarnessTextUI) Write(p []byte) (n int, err error) {
+	ui.WriteLineToEventBox(string(p))
+	return len(p), nil
+}
+
 // AttachDebugLogger attaches a logger to the UI object.  If a logger is
 // attached, debug logging messages will be emitted
 func (ui *TestHarnessTextUI) AttachDebugLogger(logger *log.Logger) {

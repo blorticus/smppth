@@ -7,13 +7,20 @@ import (
 	"strconv"
 )
 
-type PduFactory struct {
+type PduFactory interface {
+	CreateEnquireLink() *smpp.PDU
+	CreateEnquireLinkRespFromRequest(requestPDU *smpp.PDU) *smpp.PDU
+	CreateSubmitSm(parameters map[string]string) (*smpp.PDU, error)
+	CreateSubmitSmRespFromRequest(requestPDU *smpp.PDU, messageID string) *smpp.PDU
+}
+
+type DefaultPduFactory struct {
 	nextSequenceNumber        uint32
 	defaultSubmitSmParameters map[string]interface{}
 }
 
-func NewPduFactory() *PduFactory {
-	return &PduFactory{
+func NewDefaultPduFactory() *DefaultPduFactory {
+	return &DefaultPduFactory{
 		nextSequenceNumber: 2,
 		defaultSubmitSmParameters: map[string]interface{}{
 			"source_addr_npi":  uint8(0),
@@ -25,16 +32,16 @@ func NewPduFactory() *PduFactory {
 	}
 }
 
-func (factory *PduFactory) CreateEnquireLink() *smpp.PDU {
+func (factory *DefaultPduFactory) CreateEnquireLink() *smpp.PDU {
 	factory.nextSequenceNumber++
 	return smpp.NewPDU(smpp.CommandEnquireLink, 0, factory.nextSequenceNumber, []*smpp.Parameter{}, []*smpp.Parameter{})
 }
 
-func (factory *PduFactory) CreateEnquireLinkRespFromRequest(requestPDU smpp.PDU) *smpp.PDU {
+func (factory *DefaultPduFactory) CreateEnquireLinkRespFromRequest(requestPDU *smpp.PDU) *smpp.PDU {
 	return smpp.NewPDU(smpp.CommandEnquireLinkResp, 0, requestPDU.SequenceNumber, []*smpp.Parameter{}, []*smpp.Parameter{})
 }
 
-func (factory *PduFactory) CreateSubmitSmUsingTextParameters(parameters map[string]string) (*smpp.PDU, error) {
+func (factory *DefaultPduFactory) CreateSubmitSm(parameters map[string]string) (*smpp.PDU, error) {
 	usingParameters := make(map[string]interface{})
 
 	for key, defaultValue := range factory.defaultSubmitSmParameters {
@@ -77,13 +84,13 @@ func (factory *PduFactory) CreateSubmitSmUsingTextParameters(parameters map[stri
 	}, []*smpp.Parameter{}), nil
 }
 
-func (factory *PduFactory) CreateSubmitSmRespFromRequest(requestPDU *smpp.PDU, messageID string) *smpp.PDU {
+func (factory *DefaultPduFactory) CreateSubmitSmRespFromRequest(requestPDU *smpp.PDU, messageID string) *smpp.PDU {
 	return smpp.NewPDU(smpp.CommandSubmitSm, 0, 1, []*smpp.Parameter{
 		smpp.NewCOctetStringParameter(messageID),
 	}, []*smpp.Parameter{})
 }
 
-func (factory *PduFactory) attemptCoersionFromStringToNamedType(value string, coercedType string) (interface{}, bool) {
+func (factory *DefaultPduFactory) attemptCoersionFromStringToNamedType(value string, coercedType string) (interface{}, bool) {
 	switch coercedType {
 	case "uint8":
 		coercedValue, err := strconv.ParseUint(value, 10, 8)
