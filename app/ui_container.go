@@ -61,14 +61,17 @@ func (ui *TestHarnessTextUI) createCommandInputField() *TestHarnessTextUI {
 		SetFieldBackgroundColor(tcell.ColorBlack).
 		SetFieldWidth(100).
 		SetDoneFunc(func(key tcell.Key) {
-			ui.commandReadlineHistory.AddItem(ui.userCommandInputField.GetText())
-			ui.commandReadlineHistory.ResetIteration()
 			if key == tcell.KeyEnter {
+				userProvidedCommandText := ui.userCommandInputField.GetText()
+
+				ui.commandReadlineHistory.AddItem(userProvidedCommandText)
+				ui.commandReadlineHistory.ResetIteration()
 				if ui.userCommandHistoryTextView.GetText(false) == "" {
-					fmt.Fprintf(ui.userCommandHistoryTextView, ui.userCommandInputField.GetText())
+					fmt.Fprintf(ui.userCommandHistoryTextView, userProvidedCommandText)
 				} else {
-					fmt.Fprintf(ui.userCommandHistoryTextView, "\n%s", ui.userCommandInputField.GetText())
+					fmt.Fprintf(ui.userCommandHistoryTextView, "\n%s", userProvidedCommandText)
 				}
+				ui.sendNextInputCommandToChannelWithoutBlocking(userProvidedCommandText)
 				ui.userCommandInputField.SetText("")
 				ui.tviewApplication.Draw()
 			}
@@ -91,6 +94,10 @@ func (ui *TestHarnessTextUI) createCommandInputField() *TestHarnessTextUI {
 	})
 
 	return ui
+}
+
+func (ui *TestHarnessTextUI) sendNextInputCommandToChannelWithoutBlocking(commandText string) {
+	go func() { ui.userInputStringChannel <- commandText }()
 }
 
 func (ui *TestHarnessTextUI) createEventOutputTextView() *TestHarnessTextUI {
