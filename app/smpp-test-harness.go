@@ -9,6 +9,7 @@ import (
 )
 
 var errLogger *log.Logger
+var debugLogger *log.Logger
 
 func main() {
 	errLogger = initializeErrorLogger()
@@ -18,12 +19,15 @@ func main() {
 	esmes, smscs, err := smppth.NewApplicationConfigYamlReader().ParseFile(yamlConfigFileName)
 	fatalOutsideUIOnErr(err)
 
+	debugLogger = initializeDebugLogger(runAsEsmesOrSmscs)
+
 	var agentGroup *smppth.AgentGroup
 	if runAsEsmesOrSmscs == "esmes" {
 		agentGroup = generateEsmeAgentGroup(esmes)
 	} else {
 		agentGroup = generateSmscAgentGroup(smscs)
 	}
+	agentGroup.AttachDebugLoggerWriter(debugLogger.Writer())
 
 	ui := BuildUserInterface()
 	commandInputTextChannel := ui.UserInputStringCommandChannel()
@@ -31,8 +35,10 @@ func main() {
 	application := smppth.NewStandardApplication().
 		SetPduFactory(smppth.NewDefaultPduFactory()).
 		SetOutputGenerator(smppth.NewStandardOutputGenerator()).
+		SetAgentGroup(agentGroup).
 		SetEventOutputWriter(ui)
 	application.AttachEventChannel(agentGroup.SharedAgentEventChannel())
+	application.EnableDebugMessages(debugLogger.Writer())
 
 	go application.Start()
 	go startListeningForUserCommands(commandInputTextChannel, ui, application)
@@ -59,6 +65,13 @@ func startListeningForUserCommands(commandInputTextChannel <-chan string, ui *Te
 
 func initializeErrorLogger() *log.Logger {
 	return log.New(os.Stderr, "", 0)
+}
+
+func initializeDebugLogger(forEsmesOrSmscs string) *log.Logger {
+	debugFileHandle, err := os.OpenFile(fmt.Sprintf("/tmp/smpp-debug-%s.log", forEsmesOrSmscs), os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0640)
+	fatalOutsideUIOnErr(err)
+
+	return log.New(debugFileHandle, "(smpp-test-harness): ", 0)
 }
 
 func fatalOutsideUI(msg string) {
