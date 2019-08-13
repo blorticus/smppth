@@ -2,6 +2,9 @@ package smppth
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
 	"smpp"
 )
 
@@ -10,6 +13,7 @@ import (
 type AgentGroup struct {
 	mapOfAgentNameToAgentObject map[string]Agent
 	sharedAgentEventChannel     chan *AgentEvent
+	debugLogger                 *log.Logger
 }
 
 // NewAgentGroup creates a new AgentGroup and adds to it the provided list of managed agents
@@ -17,6 +21,7 @@ func NewAgentGroup(listOfManagedAgents []Agent) *AgentGroup {
 	group := &AgentGroup{
 		mapOfAgentNameToAgentObject: make(map[string]Agent),
 		sharedAgentEventChannel:     make(chan *AgentEvent),
+		debugLogger:                 log.New(ioutil.Discard, "", 0),
 	}
 
 	for _, agent := range listOfManagedAgents {
@@ -24,6 +29,11 @@ func NewAgentGroup(listOfManagedAgents []Agent) *AgentGroup {
 	}
 
 	return group
+}
+
+// AttachDebugLoggerWriter enables debug logging, sending messages to the provided Writer.
+func (group *AgentGroup) AttachDebugLoggerWriter(writer io.Writer) {
+	group.debugLogger = log.New(writer, "(AgentGroup): ", 0)
 }
 
 // RoutePduToAgentForSending accepts an SMPP PDU, and routes it to the named source peer,
@@ -34,6 +44,8 @@ func (group *AgentGroup) RoutePduToAgentForSending(nameOfSourcePeer string, name
 	if agentObject == nil {
 		return fmt.Errorf("This AgentGroup is not managing an agent named [%s]", nameOfSourcePeer)
 	}
+
+	group.debugLogger.Printf("routing pdu of type (%s) from (%s) to (%s)\n", pduToSend.CommandName(), nameOfSourcePeer, nameOfDestinationPeer)
 
 	err := agentObject.SendMessageToPeer(&MessageDescriptor{
 		NameOfSourcePeer: nameOfSourcePeer,
