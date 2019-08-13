@@ -3,6 +3,8 @@ package smppth
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
 	"os"
 	"smpp"
 	"time"
@@ -16,6 +18,7 @@ type StandardApplication struct {
 	incomingSharedEventChannel  <-chan *AgentEvent
 	proxiedOutgoingEventChannel chan *AgentEvent
 	automaticResponsesEnabled   bool
+	debugLogger                 *log.Logger
 }
 
 func NewStandardApplication() *StandardApplication {
@@ -27,6 +30,7 @@ func NewStandardApplication() *StandardApplication {
 		incomingSharedEventChannel:  nil,
 		proxiedOutgoingEventChannel: nil,
 		automaticResponsesEnabled:   true,
+		debugLogger:                 log.New(ioutil.Discard, "", 0),
 	}
 }
 
@@ -50,10 +54,23 @@ func (app *StandardApplication) SetPduFactory(factory PduFactory) *StandardAppli
 	return app
 }
 
+func (app *StandardApplication) SetAgentGroup(group *AgentGroup) *StandardApplication {
+	app.agentGroup = group
+	return app
+}
+
 func (app *StandardApplication) AttachEventChannel(channel <-chan *AgentEvent) (proxiedEventChannel <-chan *AgentEvent) {
 	app.incomingSharedEventChannel = channel
 	app.proxiedOutgoingEventChannel = make(chan *AgentEvent)
 	return app.proxiedOutgoingEventChannel
+}
+
+func (app *StandardApplication) EnableDebugMessages(writer io.Writer) {
+	app.debugLogger = log.New(writer, "(StandardApplication): ", 0)
+}
+
+func (app *StandardApplication) DisableDebugMessages() {
+	app.debugLogger = log.New(ioutil.Discard, "", 0)
 }
 
 func (app *StandardApplication) Start() {
@@ -88,14 +105,17 @@ func (app *StandardApplication) Start() {
 func (app *StandardApplication) ReceiveNextCommand(command *UserCommand) {
 	switch command.Type {
 	case SendPDU:
-		commandDetails := command.Details.(SendPduDetails)
+		commandDetails := command.Details.(*SendPduDetails)
 		generatedPDU, err := app.tryToGeneratePDUFromUserCommandDetails(commandDetails)
 
 		if err != nil {
 			fmt.Fprintf(app.eventOutputWriter, err.Error())
 		}
 
-		app.agentGroup.RoutePduToAgentForSending(commandDetails.NameOfAgentThatWillSendPdu, commandDetails.NameOfPeerThatShouldReceivePdu, generatedPDU)
+		err = app.agentGroup.RoutePduToAgentForSending(commandDetails.NameOfAgentThatWillSendPdu, commandDetails.NameOfPeerThatShouldReceivePdu, generatedPDU)
+		if err != nil {
+			fmt.Fprintf(app.eventOutputWriter, "Unable to send pdu (%s) from (%s) to (%s): %s", generatedPDU.CommandName(), commandDetails.NameOfAgentThatWillSendPdu, commandDetails.NameOfPeerThatShouldReceivePdu, err)
+		}
 	}
 }
 
@@ -134,7 +154,7 @@ func (app *StandardApplication) writeToProxiedEventChannelWithoutBlockingThisFun
 	go func() { app.proxiedOutgoingEventChannel <- event }()
 }
 
-func (app *StandardApplication) tryToGeneratePDUFromUserCommandDetails(details SendPduDetails) (*smpp.PDU, error) {
+func (app *StandardApplication) tryToGeneratePDUFromUserCommandDetails(details *SendPduDetails) (*smpp.PDU, error) {
 	switch details.TypeOfSmppPDU {
 	case smpp.CommandSubmitSm:
 		pdu, err := app.pduFactory.CreateSubmitSm(details.StringParametersMap)
