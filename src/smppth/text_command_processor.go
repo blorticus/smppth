@@ -6,8 +6,11 @@ import (
 	"smpp"
 )
 
-// TextCommandProcessor connects to a reader, which accepts structured command messages, and a writer,
-// which emits events on behalf of testharness agents that have been started.
+// TextCommandProcessor accepts incoming text commands and, if they match the TextCommandProcessor syntax,
+// then it emits a corresponding UserCommand structs.  The syntax includes:
+//    $agent_name: send enquire-link to $peer_name
+//    $agent_name: send submit-sm to $peer_name [source_addr_ton=$sat] [source_address=$saddr] [dest_addr_ton=$dat] [destination_address=$daddr] [short_message=$msg]
+//    help
 type TextCommandProcessor struct {
 	helpCommandMatcher           *regexp.Regexp
 	sendCommandMatcher           *regexp.Regexp
@@ -20,9 +23,7 @@ type TextCommandProcessor struct {
 	lastSetOfMatchGroupValues    []string
 }
 
-// NewTextCommandProcessor creates an empty broker, where the prompt output stream is set to STDOUT,
-// the command input stream is set to STDIN, and the event output writer is set to STDOUT.  Built-in
-// outputs are not used by default.
+// NewTextCommandProcessor creates a TextCommandProcessor.
 func NewTextCommandProcessor() *TextCommandProcessor {
 	return &TextCommandProcessor{
 		helpCommandMatcher:           regexp.MustCompile(`^help$`),
@@ -37,6 +38,8 @@ func NewTextCommandProcessor() *TextCommandProcessor {
 	}
 }
 
+// ConvertCommandLineStringToUserCommand accepts a string command line, and if it matches the TextCommandProcessor
+// syntax, returns the matching UserCommand struct.  It returns an error if some part of the command is not understood.
 func (processor *TextCommandProcessor) ConvertCommandLineStringToUserCommand(commandLine string) (*UserCommand, error) {
 	processor.lastSetOfMatchGroupValues = []string{}
 
@@ -67,13 +70,6 @@ func (processor *TextCommandProcessor) ConvertCommandLineStringToUserCommand(com
 	}
 
 	return nil, fmt.Errorf("Command not understood")
-}
-
-func (processor *TextCommandProcessor) CommandTextHelp() string {
-	return `
-$esme_name: send submit-sm to $smsc_name short_message="$message" dest_addr=$addr
-$esme_name: send enquire-link to $smsc_name
-`
 }
 
 func (processor *TextCommandProcessor) thisIsTheHelpCommand(commandLine string) bool {

@@ -7,10 +7,11 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestEsmePeerMessageListener(t *testing.T) {
-	esme := &ESME{}
+	esme := NewEsme("test-esme", nil, 0)
 
 	conn := newFakeNetConn()
 
@@ -33,7 +34,8 @@ func TestEsmePeerMessageListener(t *testing.T) {
 	eventMsgChannel := make(chan *AgentEvent)
 
 	conn.nextReadValue = testSmppMsgEnquireLink01()
-	go connector.startListeningForIncomingMessagesFromPeer(eventMsgChannel)
+	connector.parentESME.SetAgentEventChannel(eventMsgChannel)
+	go connector.startListeningForIncomingMessagesFromPeer()
 
 	eventMessage := <-eventMsgChannel
 
@@ -78,34 +80,95 @@ func TestEsmeOneSmscEndpoint(t *testing.T) {
 	}
 
 	esmeEventChannel := make(chan *AgentEvent)
+	esme.SetAgentEventChannel(esmeEventChannel)
 
-	go esme.StartEventLoop(esmeEventChannel)
+	go esme.StartEventLoop()
 
-	nextEvent := <-esmeEventChannel
-
-	if nextEvent.Type != CompletedBind {
-		t.Errorf("For first received event, expected CompletedBind (%d), got (%d)", int(CompletedBind), int(nextEvent.Type))
+	if _, err := eventChannelTypeCheck(esmeEventChannel, SentPDU); err != nil {
+		t.Errorf("On StartEventLoop, first message, %s", err)
 	}
 
-	esme.SendMessageToPeer(&MessageDescriptor{NameOfSourcePeer: "testEsme01", NameOfRemotePeer: "testSmsc01", PDU: testSmppPDUEnquireLink01()})
-
-	nextEvent = <-esmeEventChannel
-
-	if nextEvent.Type != ReceivedPDU {
-		t.Errorf("For second received event, expected ReceivedMessage (%d), got (%d)", int(ReceivedPDU), int(nextEvent.Type))
+	if _, err := eventChannelTypeCheck(esmeEventChannel, ReceivedPDU); err != nil {
+		t.Errorf("On StartEventLoop, second message, %s", err)
 	}
 
-	if nextEvent.RemotePeerName != "testSmsc01" {
-		t.Errorf("For second received event, expected nameOfMessageSender = (testSmsc01), got = (%s)", nextEvent.RemotePeerName)
+	if _, err := eventChannelTypeCheck(esmeEventChannel, CompletedBind); err != nil {
+		t.Errorf("On StartEventLoop, third message, %s", err)
 	}
 
-	if nextEvent.SmppPDU == nil {
-		t.Errorf("For second received event, expect smppPDU not nil, but it is")
+	esme.SendMessageToPeer(&MessageDescriptor{NameOfSendingPeer: "testEsme01", NameOfReceivingPeer: "testSmsc01", PDU: testSmppPDUEnquireLink01()})
+
+	nextEvent, err := eventChannelTypeCheck(esmeEventChannel, SentPDU)
+	if err != nil {
+		t.Errorf("After SendMessageToPeer, first AgentEvent, %s", err)
 	} else {
-		if nextEvent.SmppPDU.CommandID != smpp.CommandEnquireLinkResp {
-			t.Errorf("For second received event, expect enquire-link-response, but got (%s)", nextEvent.SmppPDU.CommandName())
+		err = eventCheck(nextEvent, "testSmsc01", smpp.CommandEnquireLink)
+		if err != nil {
+			t.Errorf("After SendMessageToPeer, first AgentEvent, %s", err)
 		}
 	}
+
+	nextEvent, err = eventChannelTypeCheck(esmeEventChannel, ReceivedPDU)
+	if err != nil {
+		t.Errorf("After SendMessageToPeer, second AgentEvent, %s", err)
+	} else {
+		err = eventCheck(nextEvent, "testSmsc01", smpp.CommandEnquireLinkResp)
+		if err != nil {
+			t.Errorf("After SendMessageToPeer, second AgentEvent, %s", err)
+		}
+	}
+}
+
+func eventTypeToString(eventType AgentEventType) string {
+	switch eventType {
+	case SentPDU:
+		return "SentPDU"
+	case ReceivedPDU:
+		return "ReceivedPDU"
+	case CompletedBind:
+		return "CompletedBind"
+	default:
+		return "<unknown>"
+	}
+
+}
+
+func eventChannelTypeCheck(eventChannel <-chan *AgentEvent, expectingEventType AgentEventType) (*AgentEvent, error) {
+	select {
+	case nextEvent := <-eventChannel:
+		if nextEvent.Type != expectingEventType {
+			return nextEvent, fmt.Errorf("For first received event, expected %s (%d), got %s (%d)",
+				eventTypeToString(expectingEventType),
+				int(expectingEventType),
+				eventTypeToString(nextEvent.Type),
+				int(nextEvent.Type),
+			)
+		}
+
+		return nextEvent, nil
+	case <-time.After(time.Second * 2):
+		return nil, fmt.Errorf("Timed out waiting for first event from esmeEventChannel")
+	}
+}
+
+func eventCheck(event *AgentEvent, expectedRemotePeerName string, expectedSmppCommand smpp.CommandIDType) error {
+	if event.RemotePeerName != expectedRemotePeerName {
+		return fmt.Errorf("expected RemotePeerNAme = (%s), got = (%s)", expectedRemotePeerName, event.RemotePeerName)
+	}
+
+	if event.SmppPDU == nil {
+		return fmt.Errorf("expected SmppPDU, got nil")
+	}
+
+	if event.SmppPDU.CommandID != expectedSmppCommand {
+		return fmt.Errorf("expected event.Type = %s (%d), got = %s (%d)",
+			smpp.CommandName(event.SmppPDU.CommandID),
+			event.SmppPDU.CommandID,
+			event.SmppPDU.CommandName(),
+			event.SmppPDU.CommandID)
+	}
+
+	return nil
 }
 
 func smscSimulatedListener(listener net.Listener) {

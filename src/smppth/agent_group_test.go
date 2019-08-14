@@ -101,11 +101,15 @@ func newMockAgent(name string) *mockAgent {
 	return &mockAgent{name: name, eventLoopBlock: make(chan bool), lastReceivedMessage: nil}
 }
 
+func (agent *mockAgent) SetAgentEventChannel(chan<- *AgentEvent) {
+
+}
+
 func (agent *mockAgent) Name() string {
 	return agent.name
 }
 
-func (agent *mockAgent) StartEventLoop(incomingAgentEventChannel chan<- *AgentEvent) {
+func (agent *mockAgent) StartEventLoop() {
 	agent.eventLoopBlock <- true
 }
 

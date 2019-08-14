@@ -13,10 +13,11 @@ func TestSmscPeerMessageHandler(t *testing.T) {
 	handler := newSmscPeerMessageHandler(parentSMSC, mockRemotePeerConnection)
 
 	eventMsgChannel := make(chan *AgentEvent)
+	parentSMSC.SetAgentEventChannel(eventMsgChannel)
 
 	mockRemotePeerConnection.nextReadValue = testSmppMsgBindTransceiver01()
 
-	go handler.startHandlingPeerConnection(eventMsgChannel)
+	go handler.startHandlingPeerConnection()
 
 	nextEvent := <-eventMsgChannel
 	err := validateEventMessage(nextEvent, ReceivedPDU, "foo")
@@ -46,7 +47,7 @@ func TestSmscPeerMessageHandler(t *testing.T) {
 		}
 	}
 
-	err = parentSMSC.SendMessageToPeer(&MessageDescriptor{NameOfSourcePeer: "testSmsc", NameOfRemotePeer: "foo", PDU: testSmppPDUEnquireLink01()})
+	err = parentSMSC.SendMessageToPeer(&MessageDescriptor{NameOfSendingPeer: "testSmsc", NameOfReceivingPeer: "foo", PDU: testSmppPDUEnquireLink01()})
 
 	if err != nil {
 		t.Errorf("Received error on sending enquire-link to peer 'foo': %s", err)

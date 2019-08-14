@@ -51,11 +51,11 @@ func startListeningForUserCommands(commandInputTextChannel <-chan string, ui *Te
 	textCommandProcessor := smppth.NewTextCommandProcessor()
 
 	for {
-		nextUserCommand := <-commandInputTextChannel
-		userCommandStruct, err := textCommandProcessor.ConvertCommandLineStringToUserCommand(nextUserCommand)
+		nextUserCommandText := <-commandInputTextChannel
+		userCommandStruct, err := textCommandProcessor.ConvertCommandLineStringToUserCommand(nextUserCommandText)
 
 		if err != nil {
-			ui.WriteLineToEventBox(fmt.Sprintf("[ERROR] Invalid command (%s)", nextUserCommand))
+			ui.WriteLineToEventBox(fmt.Sprintf("[ERROR] Invalid command (%s)", nextUserCommandText))
 		} else {
 			app.ReceiveNextCommand(userCommandStruct)
 		}

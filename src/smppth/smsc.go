@@ -15,6 +15,7 @@ type SMSC struct {
 	port                                      uint16
 	mapOfHandlerForRemotePeerByRemotePeerName sync.Map
 	assertedSystemID                          string
+	agentEventChannel                         chan<- *AgentEvent
 }
 
 // NewSMSC creates a new SMSC agent.
@@ -24,10 +25,11 @@ func NewSMSC(smscName string, smscBindSystemID string, listeningIP net.IP, liste
 	}
 
 	return &SMSC{
-		name:             smscName,
-		ip:               listeningIP,
-		port:             listeningPort,
-		assertedSystemID: smscBindSystemID,
+		name:              smscName,
+		ip:                listeningIP,
+		port:              listeningPort,
+		assertedSystemID:  smscBindSystemID,
+		agentEventChannel: nil,
 	}
 }
 
@@ -36,14 +38,19 @@ func (smsc *SMSC) Name() string {
 	return smsc.name
 }
 
+// SetAgentEventChannel sets a channel to which this SMSC instance will write events
+func (smsc *SMSC) SetAgentEventChannel(agentEventChannel chan<- *AgentEvent) {
+	smsc.agentEventChannel = agentEventChannel
+}
+
 // SendMessageToPeer instructs this SMSC agent to send a message to the peer identified in the
 // MessageDescriptor.  No effort is made to validate that the MessageDescriptor SourceAgentName
 // matches this agent's name.
 func (smsc *SMSC) SendMessageToPeer(message *MessageDescriptor) error {
-	peerHandler, peerHandlerIsInMap := smsc.mapOfHandlerForRemotePeerByRemotePeerName.Load(message.NameOfRemotePeer)
+	peerHandler, peerHandlerIsInMap := smsc.mapOfHandlerForRemotePeerByRemotePeerName.Load(message.NameOfReceivingPeer)
 
 	if !peerHandlerIsInMap {
-		return fmt.Errorf("This Agent is not bound to a peer named (%s)", message.NameOfRemotePeer)
+		return fmt.Errorf("This Agent is not bound to a peer named (%s)", message.NameOfReceivingPeer)
 	}
 
 	return peerHandler.(*smscPeerMessageHandler).sendSmppPduToPeer(message.PDU)
@@ -52,7 +59,7 @@ func (smsc *SMSC) SendMessageToPeer(message *MessageDescriptor) error {
 // StartEventLoop instructs this SMSC agent to start listening for incoming transport connections,
 // to respond to binds, to emit AgentEvents to the agentEventChannel, and accept
 // messages for remote delivery via SendMessageToPeer().
-func (smsc *SMSC) StartEventLoop(agentEventChannel chan<- *AgentEvent) {
+func (smsc *SMSC) StartEventLoop() {
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", smsc.ip.String(), smsc.port))
 	smsc.panicIfError(err)
 
@@ -61,7 +68,13 @@ func (smsc *SMSC) StartEventLoop(agentEventChannel chan<- *AgentEvent) {
 		smsc.panicIfError(err)
 
 		peerMessageHandler := newSmscPeerMessageHandler(smsc, incomingTransport)
-		go peerMessageHandler.startHandlingPeerConnection(agentEventChannel)
+		go peerMessageHandler.startHandlingPeerConnection()
+	}
+}
+
+func (smsc *SMSC) sendEventIfChannelDefined(event *AgentEvent) {
+	if smsc.agentEventChannel != nil {
+		smsc.agentEventChannel <- event
 	}
 }
 
@@ -93,7 +106,7 @@ func newSmscPeerMessageHandler(parentSmsc *SMSC, transportConnectionToPeer net.C
 	}
 }
 
-func (handler *smscPeerMessageHandler) startHandlingPeerConnection(agentEventChannel chan<- *AgentEvent) {
+func (handler *smscPeerMessageHandler) startHandlingPeerConnection() {
 	pdus, err := handler.streamReader.ExtractNextPDUs()
 	handler.parentSMSC.panicIfError(err)
 
@@ -102,15 +115,15 @@ func (handler *smscPeerMessageHandler) startHandlingPeerConnection(agentEventCha
 	}
 
 	handler.nameOfRemotePeer = handler.extractPeerNameFromTransceiverBind(pdus[0])
-	agentEventChannel <- &AgentEvent{RemotePeerName: handler.nameOfRemotePeer, SourceAgent: handler.parentSMSC, Type: ReceivedPDU, SmppPDU: pdus[0]}
+	handler.parentSMSC.sendEventIfChannelDefined(&AgentEvent{RemotePeerName: handler.nameOfRemotePeer, SourceAgent: handler.parentSMSC, Type: ReceivedPDU, SmppPDU: pdus[0]})
 
 	bindResponsePDU := handler.sendTransceiverResponseToPeerBasedOnRequestBind(pdus[0])
 	handler.parentSMSC.notifySmscOfThisHandlersPeerName(handler.nameOfRemotePeer, handler)
 
-	agentEventChannel <- &AgentEvent{RemotePeerName: handler.nameOfRemotePeer, SourceAgent: handler.parentSMSC, Type: CompletedBind, SmppPDU: bindResponsePDU}
+	handler.parentSMSC.sendEventIfChannelDefined(&AgentEvent{RemotePeerName: handler.nameOfRemotePeer, SourceAgent: handler.parentSMSC, Type: CompletedBind, SmppPDU: bindResponsePDU})
 
 	for i := 1; i < len(pdus); i++ {
-		agentEventChannel <- &AgentEvent{Type: ReceivedPDU, SmppPDU: pdus[i], RemotePeerName: handler.nameOfRemotePeer, SourceAgent: handler.parentSMSC}
+		handler.parentSMSC.sendEventIfChannelDefined(&AgentEvent{Type: ReceivedPDU, SmppPDU: pdus[i], RemotePeerName: handler.nameOfRemotePeer, SourceAgent: handler.parentSMSC})
 	}
 
 	for {
@@ -118,7 +131,7 @@ func (handler *smscPeerMessageHandler) startHandlingPeerConnection(agentEventCha
 		handler.parentSMSC.panicIfError(err)
 
 		for _, pdu := range pdus {
-			agentEventChannel <- &AgentEvent{Type: ReceivedPDU, SmppPDU: pdu, RemotePeerName: handler.nameOfRemotePeer, SourceAgent: handler.parentSMSC}
+			handler.parentSMSC.sendEventIfChannelDefined(&AgentEvent{Type: ReceivedPDU, SmppPDU: pdu, RemotePeerName: handler.nameOfRemotePeer, SourceAgent: handler.parentSMSC})
 		}
 	}
 }

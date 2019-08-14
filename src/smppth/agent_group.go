@@ -45,12 +45,10 @@ func (group *AgentGroup) RoutePduToAgentForSending(nameOfSourcePeer string, name
 		return fmt.Errorf("This AgentGroup is not managing an agent named [%s]", nameOfSourcePeer)
 	}
 
-	group.debugLogger.Printf("routing pdu of type (%s) from (%s) to (%s)\n", pduToSend.CommandName(), nameOfSourcePeer, nameOfDestinationPeer)
-
 	err := agentObject.SendMessageToPeer(&MessageDescriptor{
-		NameOfSourcePeer: nameOfSourcePeer,
-		NameOfRemotePeer: nameOfDestinationPeer,
-		PDU:              pduToSend,
+		NameOfSendingPeer:   nameOfSourcePeer,
+		NameOfReceivingPeer: nameOfDestinationPeer,
+		PDU:                 pduToSend,
 	})
 
 	if err != nil {
@@ -116,6 +114,7 @@ func (group *AgentGroup) SetOfManagedAgents() []Agent {
 // the shared event channel.  The agents are started in no particular order.
 func (group *AgentGroup) StartAllAgents() {
 	for _, agent := range group.mapOfAgentNameToAgentObject {
-		go agent.StartEventLoop(group.sharedAgentEventChannel)
+		agent.SetAgentEventChannel(group.sharedAgentEventChannel)
+		go agent.StartEventLoop()
 	}
 }
