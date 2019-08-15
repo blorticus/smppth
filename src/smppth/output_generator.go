@@ -34,6 +34,6 @@ func (generator *StandardOutputGenerator) SayTheAPduWasSentByAnAgent(sendingAgen
 }
 
 // SayTheATransceiverBindWasCompletedByAnAgent produces output "transceiver bind completed between $esme_name and $smsc_name"
-func (generator *StandardOutputGenerator) SayTheATransceiverBindWasCompletedByAnAgent(esmePeerName string, smscPeerName string) string {
-	return fmt.Sprintf("transceiver bind completed between %s and %s", esmePeerName, smscPeerName)
+func (generator *StandardOutputGenerator) SayTheATransceiverBindWasCompletedByAnAgent(localAgentName string, remotePeerName string) string {
+	return fmt.Sprintf("%s completed a transceiver bind with %s", localAgentName, remotePeerName)
 }
