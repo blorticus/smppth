@@ -179,21 +179,21 @@ func (app *StandardApplication) ReceiveNextCommand(command *UserCommand) {
 }
 
 func (app *StandardApplication) respondToReceivedPduEvent(event *AgentEvent) {
-	fmt.Fprintf(app.eventOutputWriter, app.outputGenerator.SayThatAPduWasReceivedByAnAgent(event.SourceAgent.Name(), event.RemotePeerName, event.SmppPDU))
+	fmt.Fprintf(app.eventOutputWriter, app.outputGenerator.SayThatAPduWasReceivedByAnAgent(event.RemotePeerName, event.SourceAgent.Name(), event.SmppPDU))
 
 	if app.automaticResponsesEnabled {
 		switch event.SmppPDU.CommandID {
 		case smpp.CommandEnquireLink:
 			event.SourceAgent.SendMessageToPeer(&MessageDescriptor{
-				NameOfReceivingPeer: event.RemotePeerName,
 				NameOfSendingPeer:   event.SourceAgent.Name(),
+				NameOfReceivingPeer: event.RemotePeerName,
 				PDU:                 app.pduFactory.CreateEnquireLinkRespFromRequest(event.SmppPDU),
 			})
 
 		case smpp.CommandSubmitSm:
 			event.SourceAgent.SendMessageToPeer(&MessageDescriptor{
-				NameOfReceivingPeer: event.RemotePeerName,
 				NameOfSendingPeer:   event.SourceAgent.Name(),
+				NameOfReceivingPeer: event.RemotePeerName,
 				PDU:                 app.pduFactory.CreateSubmitSmRespFromRequest(event.SmppPDU, event.SourceAgent.Name()),
 			})
 		}
