@@ -175,6 +175,9 @@ func (app *StandardApplication) ReceiveNextCommand(command *UserCommand) {
 		if err != nil {
 			fmt.Fprintf(app.eventOutputWriter, "Unable to send pdu (%s) from (%s) to (%s): %s", generatedPDU.CommandName(), commandDetails.NameOfAgentThatWillSendPdu, commandDetails.NameOfPeerThatShouldReceivePdu, err)
 		}
+
+	case Help:
+		fmt.Fprintf(app.eventOutputWriter, app.helpText())
 	}
 }
 
@@ -228,4 +231,10 @@ func (app *StandardApplication) tryToGeneratePDUFromUserCommandDetails(details *
 	}
 
 	return nil, fmt.Errorf("Don't know how to generate message of type (%s)", smpp.CommandName(details.TypeOfSmppPDU))
+}
+
+func (app *StandardApplication) helpText() string {
+	return "<sending_agent_name>: send enquire-link to <peer_name>\n" +
+		"<sending_agent_name>: send submit-sm to <peer_name> [params]\n" +
+		"  params: [source_addr_ton=<ton_int>] [source_addr=<addr>] [dest_addr_ton=<ton_int>] [dest_addr=<addr>] [short_message=<message>]"
 }
