@@ -31,4 +31,16 @@ supplied to the AgentGroup.
 
 ## Built-in Test Harness
 
-There is a built-in test harness in `app/`, called `smpp-test-harness`.  
+There is a built-in test harness in `app/`, called `smpp-test-harness`.  It is started
+as follows:
+
+```bash
+smpp-test-harness run esmes|smscs /path/to/config.yaml
+```
+
+An instance of `smpp-test-harness` run a set of ESME Agents or a set of SMSC Agents.
+The Agents are described in the `config.yaml` file, and if the harness is running
+ESME Agents, the `config.yaml` also describes the peers to which each ESME will bind.
+The test harness only performs transceiver binds.  The format of `config.yaml` is
+described below.
+
