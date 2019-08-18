@@ -90,3 +90,46 @@ history.  When a command is entered -- whether it is valid or not -- it
 is printed in the *Command History* box.
 
 To exit, use ^c, ^q or &lt;esc&gt;.
+
+## Config Yaml File
+
+The following is an example `config.yaml` file:
+
+```yaml
+SMSCs:
+  - Name: smsc01
+    IP: 127.0.0.1
+    Port: 2775
+    BindPassword: passwd1
+    BindSystemID: smsc01
+  - Name: smsc02
+    IP: 127.0.0.1
+    Port: 2776
+    BindPassword: passwd2
+    BindSystemID: smsc02
+ESMEs:
+  - Name: esme01
+    IP: 127.0.0.1
+    Port: 20775
+    BindSystemID: esme01
+    BindSystemType: rcs
+  - Name: esme02
+    IP: 127.0.0.1
+    BindSystemID: esme02
+    BindSystemType: rcs
+TransceiverBinds:
+  - ESME: esme01
+    SMSC: smsc01
+  - ESME: esme01
+    SMSC: smsc02
+  - ESME: esme02
+    SMSC: smsc01
+  - ESME: esme02
+    SMSC: smsc02
+```
+
+When the test harness is run `as smscs`, only the **SMSCSs** section is used.  
+When it is run `as emses`, all three sections are used.  For **SMSCs**, both the
+*IP* and *Port* are required.  For **ESMEs**, both are optional.  If *Port* is
+omitted, then an ephemeral port will be chosen.  The *TransceiverBinds* section
+is used to describe to which peers an ESMEs should connect.
