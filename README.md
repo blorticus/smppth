@@ -38,9 +38,33 @@ as follows:
 smpp-test-harness run esmes|smscs /path/to/config.yaml
 ```
 
-An instance of `smpp-test-harness` run a set of ESME Agents or a set of SMSC Agents.
+An instance of `smpp-test-harness` runs a set of ESME Agents or a set of SMSC Agents.
 The Agents are described in the `config.yaml` file, and if the harness is running
 ESME Agents, the `config.yaml` also describes the peers to which each ESME will bind.
 The test harness only performs transceiver binds.  The format of `config.yaml` is
 described below.
 
+The test harness uses a terminal-based UI.  It has three boxes:
+- The *Command History* box at the top;
+- A *Command Entry* box in the middle; and
+- An *Event Output* box at the bottom.
+
+The Agents will emit events, as described above (on receipt of PDU, on sending PDU,
+and on bind completion).  Descriptors for those events -- and any errors -- will 
+be delivered to the *Event Output* box.  Commands can be admistered to the
+harness by entering them in the *Command Entry* box.  Currently, two commands are
+supported:
+- `send` - Instructs an Agent to send a PDU to a peer;
+- `help` - Prints help text to the *Event Output* box.
+
+The `send` command take parameters, as follows:
+```bash
+<agent>: send enquire-link to <peer>
+<agent>: send submit-sm to <peer> [<params...>]
+    where <params> are any combination of:
+      source_addr_ton=<ton_int>
+      source_addr=<src_addr>
+      dest_addr_ton=<ton_int>
+      dest_addr=<dest_addr>
+      short_message="<short message>"
+```
