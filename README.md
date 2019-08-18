@@ -68,3 +68,25 @@ The `send` command take parameters, as follows:
       dest_addr=<dest_addr>
       short_message="<short message>"
 ```
+
+The first will send an enquire-link to from an Agent to a peer.  The second
+will send a submit-sm message from an Agent to a peer.  For any parameter not
+specific, a default value will be used.
+
+Each Agent will automatically respond to an incoming enquire-link with an
+enquire-link-resp, and a submit-sm with a submit-sm-resp.  In both cases,
+the sequence number of the request will be used in the response.  In the case
+of the submit-sm-resp, the `message_id` field will be set to the name of
+the responding Agent.
+
+The command box accepts bash-like emacs control keys, including:
+- ^a : move to the start of the line
+- ^e : move to the end of the line
+- ^d : reverse delete
+- ^k : remove all text from cursor through the end of the line
+
+It also support up- and down-cursor readline to move through the command
+history.  When a command is entered -- whether it is valid or not -- it
+is printed in the *Command History* box.
+
+To exit, use ^c, ^q or &lt;esc&gt;.
