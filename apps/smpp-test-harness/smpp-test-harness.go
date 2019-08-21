@@ -5,7 +5,8 @@ import (
 	"log"
 	"os"
 	"path"
-	"smppth"
+
+	smppth "github.com/blorticus/smppth"
 )
 
 var errLogger *log.Logger
