@@ -1,7 +1,7 @@
 package smppth
 
 import (
-	"smpp"
+	smpp "github.com/blorticus/smpp-go"
 )
 
 // Agent is either a testharness agent, either an ESME or an SMSC

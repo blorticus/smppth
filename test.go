@@ -3,8 +3,9 @@ package smppth
 import (
 	"fmt"
 	"net"
-	"smpp"
 	"time"
+
+	smpp "github.com/blorticus/smpp-go"
 )
 
 func testSmppMsgBindTransceiver01() []byte {

@@ -3,8 +3,9 @@ package smppth
 import (
 	"fmt"
 	"reflect"
-	"smpp"
 	"testing"
+
+	smpp "github.com/blorticus/smpp-go"
 )
 
 func TestCommandProcessorEmptyCommand(t *testing.T) {

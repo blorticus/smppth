@@ -1,7 +1,7 @@
 package smppth
 
 import (
-	"smpp"
+	smpp "github.com/blorticus/smpp-go"
 	"testing"
 	"time"
 )

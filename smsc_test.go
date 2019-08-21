@@ -2,8 +2,9 @@ package smppth
 
 import (
 	"net"
-	"smpp"
 	"testing"
+
+	smpp "github.com/blorticus/smpp-go"
 )
 
 func TestSmscPeerMessageHandler(t *testing.T) {

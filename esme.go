@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"smpp"
 	"syscall"
 
+    smpp "github.com/blorticus/smpp-go"
 	"golang.org/x/sys/unix"
 )
 

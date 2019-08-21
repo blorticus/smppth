@@ -3,11 +3,12 @@ package smppth
 import (
 	"fmt"
 	"net"
-	"smpp"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	smpp "github.com/blorticus/smpp-go"
 )
 
 func TestEsmePeerMessageListener(t *testing.T) {

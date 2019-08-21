@@ -3,7 +3,8 @@ package smppth
 import (
 	"fmt"
 	"regexp"
-	"smpp"
+
+	smpp "github.com/blorticus/smpp-go"
 )
 
 // TextCommandProcessor accepts incoming text commands and, if they match the TextCommandProcessor syntax,

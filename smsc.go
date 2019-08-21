@@ -3,8 +3,9 @@ package smppth
 import (
 	"fmt"
 	"net"
-	"smpp"
 	"sync"
+
+	smpp "github.com/blorticus/smpp-go"
 )
 
 // SMSC represents an SMPP 3.4 server, which accepts one or more transport connections and responds

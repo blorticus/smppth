@@ -6,8 +6,9 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"smpp"
 	"time"
+
+	smpp "github.com/blorticus/smpp-go"
 )
 
 // StandardApplication provides a standard method for accepting user input commands (marshalled to UserCommand structs),

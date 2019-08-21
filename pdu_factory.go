@@ -3,8 +3,9 @@ package smppth
 import (
 	"fmt"
 	"reflect"
-	"smpp"
 	"strconv"
+
+	smpp "github.com/blorticus/smpp-go"
 )
 
 // PduFactory instances produces smpp.PDU objects for various message types.  Implementations can alter the default
