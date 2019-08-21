@@ -37,9 +37,10 @@ func main() {
 		SetPduFactory(smppth.NewDefaultPduFactory()).
 		SetOutputGenerator(smppth.NewStandardOutputGenerator()).
 		SetAgentGroup(agentGroup).
+		OnQuit(func() { ui.Exit() }).
 		SetEventOutputWriter(ui)
+
 	application.AttachEventChannel(agentGroup.SharedAgentEventChannel())
-	application.EnableDebugMessages(debugLogger.Writer())
 
 	go application.Start()
 	go startListeningForUserCommands(commandInputTextChannel, ui, application)

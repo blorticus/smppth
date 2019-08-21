@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
@@ -127,7 +128,8 @@ func (ui *TestHarnessTextUI) composeIntoUIGrid() *TestHarnessTextUI {
 
 func (ui *TestHarnessTextUI) addGlobalKeybindings() *TestHarnessTextUI {
 	ui.tviewApplication.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyTab {
+		switch event.Key() {
+		case tcell.KeyTab:
 			switch ui.tviewApplication.GetFocus() {
 			case ui.userCommandHistoryTextView:
 				ui.tviewApplication.SetFocus(ui.userCommandInputField)
@@ -137,7 +139,12 @@ func (ui *TestHarnessTextUI) addGlobalKeybindings() *TestHarnessTextUI {
 				ui.tviewApplication.SetFocus(ui.userCommandHistoryTextView)
 			}
 			return nil
+		case tcell.KeyESC:
+			ui.Exit()
+		case tcell.KeyCtrlQ:
+			ui.Exit()
 		}
+
 		return event
 	})
 
@@ -179,6 +186,12 @@ func (ui *TestHarnessTextUI) StartRunning() error {
 		return err
 	}
 	return nil
+}
+
+// Exit stops the application and exits with a status of zero
+func (ui *TestHarnessTextUI) Exit() {
+	ui.tviewApplication.Stop()
+	os.Exit(0)
 }
 
 func (ui *TestHarnessTextUI) debugLogPrintf(format string, v ...interface{}) {
