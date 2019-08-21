@@ -39,6 +39,7 @@ type StandardApplication struct {
 	automaticResponsesEnabled   bool
 	debugLogger                 *log.Logger
 	shouldProxyAgentEvents      bool
+	quitCommandCallback         func()
 }
 
 // NewStandardApplication creates a new StandardApplication
@@ -53,6 +54,7 @@ func NewStandardApplication() *StandardApplication {
 		automaticResponsesEnabled:   true,
 		debugLogger:                 log.New(ioutil.Discard, "", 0),
 		shouldProxyAgentEvents:      true,
+		quitCommandCallback:         func() {},
 	}
 }
 
@@ -89,6 +91,12 @@ func (app *StandardApplication) SetPduFactory(factory PduFactory) *StandardAppli
 // SetAgentGroup adds a managed AgentGroup, which is used to direct send messages on a SendPDU command.
 func (app *StandardApplication) SetAgentGroup(group *AgentGroup) *StandardApplication {
 	app.agentGroup = group
+	return app
+}
+
+// OnQuit adds a callback when the user command is "quit"
+func (app *StandardApplication) OnQuit(quitCommandCallback func()) *StandardApplication {
+	app.quitCommandCallback = quitCommandCallback
 	return app
 }
 
@@ -179,6 +187,9 @@ func (app *StandardApplication) ReceiveNextCommand(command *UserCommand) {
 
 	case Help:
 		fmt.Fprintf(app.eventOutputWriter, app.helpText())
+
+	case Quit:
+		app.quitCommandCallback()
 	}
 }
 

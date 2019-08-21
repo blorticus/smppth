@@ -1,7 +1,7 @@
 package smppth
 
 import (
-    smpp "github.com/blorticus/smpp-go"
+	smpp "github.com/blorticus/smpp-go"
 )
 
 // UserCommandType is the type of user command provided in a UserCommand struct
@@ -11,6 +11,7 @@ type UserCommandType int
 const (
 	SendPDU = iota
 	Help
+	Quit
 )
 
 // UserCommand represents a user instruction provided to an Agent in an AgentGroup.

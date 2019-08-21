@@ -14,6 +14,7 @@ import (
 //    help
 type TextCommandProcessor struct {
 	helpCommandMatcher           *regexp.Regexp
+	quitCommandMatcher           *regexp.Regexp
 	sendCommandMatcher           *regexp.Regexp
 	sendCommandParametersMatcher *regexp.Regexp
 	emptyParameterMatcher        *regexp.Regexp
@@ -28,6 +29,7 @@ type TextCommandProcessor struct {
 func NewTextCommandProcessor() *TextCommandProcessor {
 	return &TextCommandProcessor{
 		helpCommandMatcher:           regexp.MustCompile(`^help$`),
+		quitCommandMatcher:           regexp.MustCompile(`^quit$`),
 		sendCommandMatcher:           regexp.MustCompile(`^(\S+?): send (\S+) to (\S+) *(.*)?$`),
 		sendCommandParametersMatcher: regexp.MustCompile(`^ *short_message="(.+?)" *$`),
 		emptyParameterMatcher:        regexp.MustCompile(`^(\S+)=\s+`),
@@ -43,6 +45,12 @@ func NewTextCommandProcessor() *TextCommandProcessor {
 // syntax, returns the matching UserCommand struct.  It returns an error if some part of the command is not understood.
 func (processor *TextCommandProcessor) ConvertCommandLineStringToUserCommand(commandLine string) (*UserCommand, error) {
 	processor.lastSetOfMatchGroupValues = []string{}
+
+	if processor.thisIsTheQuitCommand(commandLine) {
+		return &UserCommand{
+			Type: Quit,
+		}, nil
+	}
 
 	if processor.thisIsTheHelpCommand(commandLine) {
 		return &UserCommand{
@@ -71,6 +79,10 @@ func (processor *TextCommandProcessor) ConvertCommandLineStringToUserCommand(com
 	}
 
 	return nil, fmt.Errorf("Command not understood")
+}
+
+func (processor *TextCommandProcessor) thisIsTheQuitCommand(commandLine string) bool {
+	return processor.quitCommandMatcher.Match([]byte(commandLine))
 }
 
 func (processor *TextCommandProcessor) thisIsTheHelpCommand(commandLine string) bool {
