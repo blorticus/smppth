@@ -39,7 +39,7 @@ func testSmppPDUTransceiverResp01() *smpp.PDU {
 func testSmppMsgEnquireLink01() []byte {
 	return []byte{
 		0, 0, 0, 0x10, // len = 16
-		0, 0, 0, 0x15, // command = eqnuire_link
+		0, 0, 0, 0x15, // command = enquire_link
 		0, 0, 0, 0x00, // status code = 0
 		0, 0, 0, 0x02, // seq number = 2
 	}
@@ -50,12 +50,76 @@ func testSmppPDUEnquireLink01() *smpp.PDU {
 	return pdu
 }
 
+func testSmppMsgSubmitSm01() []byte {
+	return []byte{
+		0, 0, 0, 0x25, // len = 16
+		0, 0, 0, 0x04, // command = submit_sm
+		0, 0, 0, 0x00, // status code = 0
+		0, 0, 0, 0x03, // seq number = 2
+		0x0,                    // service_type
+		0x0,                    // source_addr_ton
+		0x0,                    // source_addr_npi,
+		0x0,                    // source_addr
+		0x0,                    // dest_addr_ton
+		0x0,                    // dest_addr_npi,
+		0x0,                    // destination_addr
+		0x0,                    // esm_class
+		0x0,                    // protocol_id
+		0x0,                    // priority_flag
+		0x0,                    // schedule_delivery_time
+		0x0,                    // validity_period
+		0x0,                    // registered_delivery
+		0x0,                    // replace_if_present_flag
+		0x0,                    // data_coding
+		0x0,                    // sm_default_msg_id
+		0x04,                   // sm_length
+		0x54, 0x45, 0x53, 0x54, // short_message ("TEST")
+	}
+}
+
+func testSmppPDUSubmitSm01() *smpp.PDU {
+	pdu, _ := smpp.DecodePDU(testSmppMsgSubmitSm01())
+	return pdu
+}
+
 type fakeNetConn struct {
 	nextReadValue []byte
 	nextReadError error
 
 	lastWriteValue []byte
 	nextWriteError error
+}
+
+func eventTypeToString(eventType AgentEventType) string {
+	switch eventType {
+	case SentPDU:
+		return "SentPDU"
+	case ReceivedPDU:
+		return "ReceivedPDU"
+	case CompletedBind:
+		return "CompletedBind"
+	default:
+		return "<unknown>"
+	}
+
+}
+
+func eventChannelTypeCheck(eventChannel <-chan *AgentEvent, expectingEventType AgentEventType) (*AgentEvent, error) {
+	select {
+	case nextEvent := <-eventChannel:
+		if nextEvent.Type != expectingEventType {
+			return nextEvent, fmt.Errorf("On received event, expected %s (%d), got %s (%d)",
+				eventTypeToString(expectingEventType),
+				int(expectingEventType),
+				eventTypeToString(nextEvent.Type),
+				int(nextEvent.Type),
+			)
+		}
+
+		return nextEvent, nil
+	case <-time.After(time.Second * 2):
+		return nil, fmt.Errorf("Timed out waiting for first event from esmeEventChannel")
+	}
 }
 
 func newFakeNetConn() *fakeNetConn {

@@ -13,25 +13,24 @@ func TestSmscPeerMessageHandler(t *testing.T) {
 
 	handler := newSmscPeerMessageHandler(parentSMSC, mockRemotePeerConnection)
 
-	eventMsgChannel := make(chan *AgentEvent)
+	eventMsgChannel := make(chan *AgentEvent, 10)
 	parentSMSC.SetAgentEventChannel(eventMsgChannel)
 
 	mockRemotePeerConnection.nextReadValue = testSmppMsgBindTransceiver01()
 
 	go handler.startHandlingPeerConnection()
 
-	nextEvent := <-eventMsgChannel
-	err := validateEventMessage(nextEvent, ReceivedPDU, "foo")
-
-	if err != nil {
-		t.Errorf("On expected ReceivedPDU event from peer 'foo': %s", err)
+	if _, err := eventChannelTypeCheck(eventMsgChannel, ReceivedPDU); err != nil {
+		t.Error(err)
 	}
 
-	nextEvent = <-eventMsgChannel
-	err = validateEventMessage(nextEvent, CompletedBind, "foo")
+	if _, err := eventChannelTypeCheck(eventMsgChannel, SentPDU); err != nil {
+		t.Error(err)
+	}
 
+	nextEvent, err := eventChannelTypeCheck(eventMsgChannel, CompletedBind)
 	if err != nil {
-		t.Errorf("On expected CompletedBind from 'foo': %s", err)
+		t.Error(err)
 	}
 
 	if nextEvent.SmppPDU.CommandID != smpp.CommandBindTransceiverResp {

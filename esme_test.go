@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	smpp "github.com/blorticus/smpp-go"
 )
@@ -32,7 +31,7 @@ func TestEsmePeerMessageListener(t *testing.T) {
 		t.Errorf("completeTransceiverBindingTowardPeer() should have Write()n bind-tranceiver, but message type = (%s)", pdu.CommandName())
 	}
 
-	eventMsgChannel := make(chan *AgentEvent)
+	eventMsgChannel := make(chan *AgentEvent, 10)
 
 	conn.nextReadValue = testSmppMsgEnquireLink01()
 	connector.parentESME.SetAgentEventChannel(eventMsgChannel)
@@ -80,7 +79,7 @@ func TestEsmeOneSmscEndpoint(t *testing.T) {
 		},
 	}
 
-	esmeEventChannel := make(chan *AgentEvent)
+	esmeEventChannel := make(chan *AgentEvent, 10)
 	esme.SetAgentEventChannel(esmeEventChannel)
 
 	go esme.StartEventLoop()
@@ -97,58 +96,56 @@ func TestEsmeOneSmscEndpoint(t *testing.T) {
 		t.Errorf("On StartEventLoop, third message, %s", err)
 	}
 
-	esme.SendMessageToPeer(&MessageDescriptor{NameOfSendingPeer: "testEsme01", NameOfReceivingPeer: "testSmsc01", PDU: testSmppPDUEnquireLink01()})
+	esme.SendMessageToPeer(&MessageDescriptor{
+		NameOfSendingPeer:   "testEsme01",
+		NameOfReceivingPeer: "testSmsc01",
+		PDU:                 testSmppPDUEnquireLink01(),
+	})
 
 	nextEvent, err := eventChannelTypeCheck(esmeEventChannel, SentPDU)
 	if err != nil {
-		t.Errorf("After SendMessageToPeer, first AgentEvent, %s", err)
+		t.Errorf("After EnquireLink SendMessageToPeer, first AgentEvent, %s", err)
 	} else {
 		err = eventCheck(nextEvent, "testSmsc01", smpp.CommandEnquireLink)
 		if err != nil {
-			t.Errorf("After SendMessageToPeer, first AgentEvent, %s", err)
+			t.Errorf("After EnquireLink SendMessageToPeer, first AgentEvent, %s", err)
 		}
 	}
 
 	nextEvent, err = eventChannelTypeCheck(esmeEventChannel, ReceivedPDU)
 	if err != nil {
-		t.Errorf("After SendMessageToPeer, second AgentEvent, %s", err)
+		t.Errorf("After EnquireLink SendMessageToPeer, second AgentEvent, %s", err)
 	} else {
 		err = eventCheck(nextEvent, "testSmsc01", smpp.CommandEnquireLinkResp)
 		if err != nil {
-			t.Errorf("After SendMessageToPeer, second AgentEvent, %s", err)
+			t.Errorf("After EnquireLink SendMessageToPeer, second AgentEvent, %s", err)
 		}
 	}
-}
 
-func eventTypeToString(eventType AgentEventType) string {
-	switch eventType {
-	case SentPDU:
-		return "SentPDU"
-	case ReceivedPDU:
-		return "ReceivedPDU"
-	case CompletedBind:
-		return "CompletedBind"
-	default:
-		return "<unknown>"
+	esme.SendMessageToPeer(&MessageDescriptor{
+		NameOfSendingPeer:   "testEsme01",
+		NameOfReceivingPeer: "testSmsc01",
+		PDU:                 testSmppPDUSubmitSm01(),
+	})
+
+	nextEvent, err = eventChannelTypeCheck(esmeEventChannel, SentPDU)
+	if err != nil {
+		t.Errorf("After SubmitSm SendMessageToPeer, first AgentEvent, %s", err)
+	} else {
+		err = eventCheck(nextEvent, "testSmsc01", smpp.CommandSubmitSm)
+		if err != nil {
+			t.Errorf("After SubmitSm SendMessageToPeer, first AgentEvent, %s", err)
+		}
 	}
 
-}
-
-func eventChannelTypeCheck(eventChannel <-chan *AgentEvent, expectingEventType AgentEventType) (*AgentEvent, error) {
-	select {
-	case nextEvent := <-eventChannel:
-		if nextEvent.Type != expectingEventType {
-			return nextEvent, fmt.Errorf("For first received event, expected %s (%d), got %s (%d)",
-				eventTypeToString(expectingEventType),
-				int(expectingEventType),
-				eventTypeToString(nextEvent.Type),
-				int(nextEvent.Type),
-			)
+	nextEvent, err = eventChannelTypeCheck(esmeEventChannel, ReceivedPDU)
+	if err != nil {
+		t.Errorf("After SubmitSm SendMessageToPeer, second AgentEvent, %s", err)
+	} else {
+		err = eventCheck(nextEvent, "testSmsc01", smpp.CommandSubmitSmResp)
+		if err != nil {
+			t.Errorf("After SubmitSm SendMessageToPeer, second AgentEvent, %s", err)
 		}
-
-		return nextEvent, nil
-	case <-time.After(time.Second * 2):
-		return nil, fmt.Errorf("Timed out waiting for first event from esmeEventChannel")
 	}
 }
 
@@ -210,6 +207,23 @@ func smscSimulatedListener(listener net.Listener) {
 
 	if err != nil {
 		panic(fmt.Sprintf("Failed on SMSC Write() of enquire-link-resp: %s", err))
+	}
+
+	lastReceivedPDU, err = simulatedSmscReceivePDUWithExpectations(conn, smpp.CommandSubmitSm)
+
+	if err != nil {
+		panic(fmt.Sprintf("On wait for first submit-sm: %s", err))
+	}
+
+	SubmitSmRespPDU := smpp.NewPDU(smpp.CommandSubmitSmResp, 0, lastReceivedPDU.SequenceNumber, []*smpp.Parameter{
+		smpp.NewCOctetStringParameter("resp"),
+	}, []*smpp.Parameter{})
+
+	encodedPDU, _ = SubmitSmRespPDU.Encode()
+	_, err = conn.Write(encodedPDU)
+
+	if err != nil {
+		panic(fmt.Sprintf("Failed on SMSC Write() of submit-sm-resp: %s", err))
 	}
 }
 
