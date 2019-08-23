@@ -11,8 +11,11 @@ import (
 // components
 type OutputGenerator interface {
 	SayThatAPduWasReceivedByAnAgent(sendingAgentName string, receivingPeerName string, receivedPDU *smpp.PDU) string
-	SayTheAPduWasSentByAnAgent(sendingAgentName string, receivingPeerName string, sentPDU *smpp.PDU) string
-	SayTheATransceiverBindWasCompletedByAnAgent(esmePeerName string, smscPeerName string) string
+	SayThatAPduWasSentByAnAgent(sendingAgentName string, receivingPeerName string, sentPDU *smpp.PDU) string
+	SayThatATransceiverBindWasCompletedByAnAgent(localAgentName string, remotePeerName string) string
+	SayThatTheTransportForAPeerClosed(localAgentName string, remotePeerName string) string
+	SayThatATransportErrorWasThrown(localAgentName string, remotePeerName string, err error) string
+	SayThatAnApplicationErrorWasThrown(reportingAgentName string, err error) string
 }
 
 // StandardOutputGenerator implements OutputGenerator, providing generic text responses for commands and events
@@ -45,12 +48,27 @@ func (generator *StandardOutputGenerator) SayThatAPduWasReceivedByAnAgent(sendin
 	}
 }
 
-// SayTheAPduWasSentByAnAgent produces output "$agent_name sent $message_type to $peer_name"
-func (generator *StandardOutputGenerator) SayTheAPduWasSentByAnAgent(sendingAgentName string, receivingPeerName string, sentPDU *smpp.PDU) string {
+// SayThatAPduWasSentByAnAgent produces output "$sendingAgentName sent $message_type to $receivingPeerName"
+func (generator *StandardOutputGenerator) SayThatAPduWasSentByAnAgent(sendingAgentName string, receivingPeerName string, sentPDU *smpp.PDU) string {
 	return fmt.Sprintf("%s sent %s to %s", sendingAgentName, sentPDU.CommandName(), receivingPeerName)
 }
 
-// SayTheATransceiverBindWasCompletedByAnAgent produces output "transceiver bind completed between $esme_name and $smsc_name"
-func (generator *StandardOutputGenerator) SayTheATransceiverBindWasCompletedByAnAgent(localAgentName string, remotePeerName string) string {
+// SayThatATransceiverBindWasCompletedByAnAgent produces output "$localAgentName completed a transceiver bind with $remotePeerName"
+func (generator *StandardOutputGenerator) SayThatATransceiverBindWasCompletedByAnAgent(localAgentName string, remotePeerName string) string {
 	return fmt.Sprintf("%s completed a transceiver bind with %s", localAgentName, remotePeerName)
+}
+
+// SayThatTheTransportForAPeerClosed produces output "$localAgentName peer connection closed from $remotePeerName"
+func (generator *StandardOutputGenerator) SayThatTheTransportForAPeerClosed(localAgentName string, remotePeerName string) string {
+	return fmt.Sprintf("%s peer connection closed from %s", localAgentName, remotePeerName)
+}
+
+// SayThatATransportErrorWasThrown produces output "$localAgentName received error on transport with $remotePeerName: $errString"
+func (generator *StandardOutputGenerator) SayThatATransportErrorWasThrown(localAgentName string, remotePeerName string, err error) string {
+	return fmt.Sprintf("%s received error on transport with %s: %s", localAgentName, remotePeerName, err)
+}
+
+// SayThatAnApplicationErrorWasThrown produces output "$reportingAgentName reports an application error: $errString"
+func (generator *StandardOutputGenerator) SayThatAnApplicationErrorWasThrown(reportingAgentName string, err error) string {
+	return fmt.Sprintf("%s reports an application error: %s", reportingAgentName, err)
 }

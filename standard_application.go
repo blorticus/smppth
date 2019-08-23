@@ -158,6 +158,15 @@ func (app *StandardApplication) Start() {
 
 		case CompletedBind:
 			app.respondToCompletedBindEvent(nextAgentEvent)
+
+		case PeerTransportClosed:
+			app.respondToPeerTransportClosedEvent(nextAgentEvent)
+
+		case TransportError:
+			app.respondToTransportErrorEvent(nextAgentEvent)
+
+		case ApplicationError:
+			app.respondToApplicationErrorEvent(nextAgentEvent)
 		}
 
 		if app.shouldProxyAgentEvents {
@@ -216,12 +225,24 @@ func (app *StandardApplication) respondToReceivedPduEvent(event *AgentEvent) {
 }
 
 func (app *StandardApplication) respondToSentPduEvent(event *AgentEvent) {
-	fmt.Fprintf(app.eventOutputWriter, app.outputGenerator.SayTheAPduWasSentByAnAgent(event.SourceAgent.Name(), event.RemotePeerName, event.SmppPDU))
+	fmt.Fprintf(app.eventOutputWriter, app.outputGenerator.SayThatAPduWasSentByAnAgent(event.SourceAgent.Name(), event.RemotePeerName, event.SmppPDU))
 }
 
 func (app *StandardApplication) respondToCompletedBindEvent(event *AgentEvent) {
-	fmt.Fprintf(app.eventOutputWriter, app.outputGenerator.SayTheATransceiverBindWasCompletedByAnAgent(event.SourceAgent.Name(), event.RemotePeerName))
+	fmt.Fprintf(app.eventOutputWriter, app.outputGenerator.SayThatATransceiverBindWasCompletedByAnAgent(event.SourceAgent.Name(), event.RemotePeerName))
 
+}
+
+func (app *StandardApplication) respondToPeerTransportClosedEvent(event *AgentEvent) {
+	fmt.Fprintf(app.eventOutputWriter, app.outputGenerator.SayThatTheTransportForAPeerClosed(event.SourceAgent.Name(), event.RemotePeerName))
+}
+
+func (app *StandardApplication) respondToTransportErrorEvent(event *AgentEvent) {
+	fmt.Fprintf(app.eventOutputWriter, app.outputGenerator.SayThatATransportErrorWasThrown(event.SourceAgent.Name(), event.RemotePeerName, event.Error))
+}
+
+func (app *StandardApplication) respondToApplicationErrorEvent(event *AgentEvent) {
+	fmt.Fprintf(app.eventOutputWriter, app.outputGenerator.SayThatAnApplicationErrorWasThrown(event.SourceAgent.Name(), event.Error))
 }
 
 func (app *StandardApplication) writeToProxiedEventChannelWithoutBlockingThisFunction(event *AgentEvent) {

@@ -303,14 +303,6 @@ func (connector *esmePeerMessageListener) startListeningForIncomingMessagesFromP
 	}
 }
 
-func (connector *esmePeerMessageListener) detectsThatPeerConnectionHasClosed(err error) bool {
-	if err != nil && err == io.EOF {
-		return true
-	}
-
-	return false
-}
-
 func (connector *esmePeerMessageListener) sendSmppPduToPeer(pdu *smpp.PDU) error {
 	if pdu.IsRequest() {
 		connector.resetSmppRequestPduSequenceNumberToLocalSequence(pdu)
