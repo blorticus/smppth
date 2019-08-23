@@ -26,7 +26,23 @@ func NewStandardOutputGenerator() *StandardOutputGenerator {
 
 // SayThatAPduWasReceivedByAnAgent produces output "$peer_name received $message_type from $agent_name"
 func (generator *StandardOutputGenerator) SayThatAPduWasReceivedByAnAgent(sendingAgentName string, receivingPeerName string, receivedPDU *smpp.PDU) string {
-	return fmt.Sprintf("%s received %s from %s", receivingPeerName, receivedPDU.CommandName(), sendingAgentName)
+	switch receivedPDU.CommandID {
+	case smpp.CommandSubmitSm:
+		return fmt.Sprintf("%s received submit-sm from %s, dest_addr=(%s), short_message=(%s)",
+			receivingPeerName,
+			sendingAgentName,
+			receivedPDU.MandatoryParameters[6].Value.(string),
+			string(receivedPDU.MandatoryParameters[17].Value.([]byte)),
+		)
+	case smpp.CommandSubmitSmResp:
+		return fmt.Sprintf("%s received submit-sm from %s, message_id=(%s)",
+			receivingPeerName,
+			sendingAgentName,
+			receivedPDU.MandatoryParameters[0].Value.(string),
+		)
+	default:
+		return fmt.Sprintf("%s received %s from %s", receivingPeerName, receivedPDU.CommandName(), sendingAgentName)
+	}
 }
 
 // SayTheAPduWasSentByAnAgent produces output "$agent_name sent $message_type to $peer_name"
