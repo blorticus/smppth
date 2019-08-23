@@ -6,7 +6,7 @@ import (
 	"net"
 	"syscall"
 
-    smpp "github.com/blorticus/smpp-go"
+	smpp "github.com/blorticus/smpp-go"
 	"golang.org/x/sys/unix"
 )
 
@@ -66,8 +66,10 @@ func (esme *ESME) StartEventLoop() {
 
 		peerConnector := newEsmePeerMessageListener(peerBind.smscName, esme, conn)
 
-		err = peerConnector.completeTransceiverBindingTowardPeer(peerBind.systemID, peerBind.systemType, peerBind.password)
-		esme.panicIfError(err)
+		if err = peerConnector.completeTransceiverBindingTowardPeer(peerBind.systemID, peerBind.systemType, peerBind.password); err != nil {
+			esme.sendApplicationErrorEvent(err, nil)
+			return
+		}
 
 		esme.mapOfConnectorForRemotePeerByRemotePeerName[peerBind.smscName] = peerConnector
 
@@ -75,15 +77,66 @@ func (esme *ESME) StartEventLoop() {
 	}
 }
 
-func (esme *ESME) panicIfError(err error) {
-	if err != nil {
-		panic(err)
+// UnbindAll instructs this ESME agent to both unbind all outstanding peer
+// connections, and close their corresponding transports.
+func (esme *ESME) UnbindAll() {
+	for _, peerHandler := range esme.mapOfConnectorForRemotePeerByRemotePeerName {
+		peerHandler.stop()
 	}
+}
+
+func (esme *ESME) sendApplicationErrorEvent(err error, pduRelatedToErrorOrNilIfNone *smpp.PDU) {
+	esme.sendEventIfChannelDefined(&AgentEvent{
+		Type:           ApplicationError,
+		SourceAgent:    esme,
+		RemotePeerName: "",
+		SmppPDU:        pduRelatedToErrorOrNilIfNone,
+		Error:          err,
+	})
+}
+
+func (esme *ESME) sendApplicationErrorEventWhenErrorDefined(err error, pduRelatedToErrorOrNilIfNone *smpp.PDU) bool {
+	if err != nil {
+		esme.sendApplicationErrorEvent(err, pduRelatedToErrorOrNilIfNone)
+		return true
+	}
+
+	return false
+}
+
+func (esme *ESME) sendTransportErrorEvent(err error, remotePeerName string) {
+	if err == io.EOF {
+		esme.sendEventIfChannelDefined(&AgentEvent{
+			Type:           PeerTransportClosed,
+			SourceAgent:    esme,
+			RemotePeerName: remotePeerName,
+			SmppPDU:        nil,
+			Error:          err,
+		})
+	} else {
+		esme.sendEventIfChannelDefined(&AgentEvent{
+			Type:           TransportError,
+			SourceAgent:    esme,
+			RemotePeerName: remotePeerName,
+			SmppPDU:        nil,
+			Error:          err,
+		})
+	}
+}
+
+func (esme *ESME) sendTransportErrorEventAndStopAllWhenErrorDefined(err error, remotePeerName string) bool {
+	if err != nil {
+		esme.sendTransportErrorEvent(err, remotePeerName)
+		esme.UnbindAll()
+		return true
+	}
+
+	return false
 }
 
 func (esme *ESME) sendEventIfChannelDefined(event *AgentEvent) {
 	if esme.agentEventChannel != nil {
-		go func() { esme.agentEventChannel <- event }()
+		esme.agentEventChannel <- event
 	}
 }
 
@@ -130,6 +183,7 @@ type esmePeerMessageListener struct {
 	nameOfRemotePeer                              string
 	parentESME                                    *ESME
 	nextGeneratedSmppRequestPduSeqNumber          uint32
+	stopChannel                                   chan bool
 }
 
 func newEsmePeerMessageListener(nameOfPeer string, parentESME *ESME, connectionToRemotePeer net.Conn) *esmePeerMessageListener {
@@ -139,6 +193,7 @@ func newEsmePeerMessageListener(nameOfPeer string, parentESME *ESME, connectionT
 		peerConnection:                       connectionToRemotePeer,
 		streamReader:                         smpp.NewNetworkStreamReader(connectionToRemotePeer),
 		nextGeneratedSmppRequestPduSeqNumber: 1,
+		stopChannel:                          make(chan bool),
 	}
 }
 
@@ -198,6 +253,11 @@ func (connector *esmePeerMessageListener) completeTransceiverBindingTowardPeer(e
 	return nil
 }
 
+type peerMessageListenerStreamReaderOutput struct {
+	pdus []*smpp.PDU
+	err  error
+}
+
 func (connector *esmePeerMessageListener) startListeningForIncomingMessagesFromPeer() {
 	for _, pdu := range connector.extraPDUsCollectedWhileWaitingForBindResponse {
 		connector.parentESME.sendEventIfChannelDefined(&AgentEvent{
@@ -208,20 +268,37 @@ func (connector *esmePeerMessageListener) startListeningForIncomingMessagesFromP
 		})
 	}
 
-	for {
-		pdus, err := connector.streamReader.ExtractNextPDUs()
-		if connector.detectsThatPeerConnectionHasClosed(err) {
-			return
-		}
-		connector.parentESME.panicIfError(err)
+	streamReaderReceiptChannel := make(chan *peerMessageListenerStreamReaderOutput)
 
-		for _, pdu := range pdus {
-			connector.parentESME.sendEventIfChannelDefined(&AgentEvent{
-				Type:           ReceivedPDU,
-				SmppPDU:        pdu,
-				RemotePeerName: connector.nameOfRemotePeer,
-				SourceAgent:    connector.parentESME,
-			})
+	go func() {
+		for {
+			pdus, err := connector.streamReader.ExtractNextPDUs()
+			streamReaderReceiptChannel <- &peerMessageListenerStreamReaderOutput{pdus, err}
+		}
+	}()
+
+	for {
+		select {
+		case incomingStreamReaderResults := <-streamReaderReceiptChannel:
+			if connector.parentESME.sendTransportErrorEventAndStopAllWhenErrorDefined(incomingStreamReaderResults.err, connector.nameOfRemotePeer) {
+				return
+			}
+
+			for _, pdu := range incomingStreamReaderResults.pdus {
+				connector.parentESME.sendEventIfChannelDefined(&AgentEvent{
+					Type:           ReceivedPDU,
+					SmppPDU:        pdu,
+					RemotePeerName: connector.nameOfRemotePeer,
+					SourceAgent:    connector.parentESME,
+				})
+			}
+
+		case <-connector.stopChannel:
+			if err := connector.peerConnection.Close(); err != nil {
+				connector.parentESME.sendTransportErrorEvent(fmt.Errorf("On local connection close: %s", err), connector.nameOfRemotePeer)
+			}
+
+			return
 		}
 	}
 }
@@ -262,4 +339,8 @@ func (connector *esmePeerMessageListener) sendSmppPduToPeer(pdu *smpp.PDU) error
 func (connector *esmePeerMessageListener) resetSmppRequestPduSequenceNumberToLocalSequence(requestPdu *smpp.PDU) {
 	requestPdu.SequenceNumber = connector.nextGeneratedSmppRequestPduSeqNumber
 	connector.nextGeneratedSmppRequestPduSeqNumber++
+}
+
+func (connector *esmePeerMessageListener) stop() {
+	connector.stopChannel <- true
 }

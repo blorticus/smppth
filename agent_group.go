@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+
 	smpp "github.com/blorticus/smpp-go"
 )
 
@@ -20,7 +21,7 @@ type AgentGroup struct {
 func NewAgentGroup(listOfManagedAgents []Agent) *AgentGroup {
 	group := &AgentGroup{
 		mapOfAgentNameToAgentObject: make(map[string]Agent),
-		sharedAgentEventChannel:     make(chan *AgentEvent),
+		sharedAgentEventChannel:     make(chan *AgentEvent, 100),
 		debugLogger:                 log.New(ioutil.Discard, "", 0),
 	}
 
