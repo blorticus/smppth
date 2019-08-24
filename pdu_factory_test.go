@@ -136,6 +136,57 @@ func TestDefaultFactoryCreateSubmitSmWithImproperlyTypedParameter(t *testing.T) 
 	}
 }
 
+func TestDefaultFactoryCreateSubmitSmRespFromRequest(t *testing.T) {
+	submitSmPdu := smpp.NewPDU(smpp.CommandSubmitSm, 10, 0, []*smpp.Parameter{
+		smpp.NewFLParameter(uint8(0)),                // service_type
+		smpp.NewFLParameter(uint8(0)),                // source_addr_ton
+		smpp.NewFLParameter(uint8(1)),                // source_addr_npi
+		smpp.NewCOctetStringParameter("source addr"), // source_addr
+		smpp.NewFLParameter(uint8(0)),                // dest_addr_ton
+		smpp.NewFLParameter(uint8(2)),                // dest_addr_npi
+		smpp.NewCOctetStringParameter("dest addr"),   // destination_addr
+		smpp.NewFLParameter(uint8(0)),                // esm_class
+		smpp.NewFLParameter(uint8(0)),                // protocol_id
+		smpp.NewFLParameter(uint8(0)),                // priority_flag
+		smpp.NewFLParameter(uint8(0)),                // scheduled_delivery_time
+		smpp.NewFLParameter(uint8(0)),                // validity_period
+		smpp.NewFLParameter(uint8(0)),                // registered_delivery
+		smpp.NewFLParameter(uint8(0)),                // replace_if_present_flag
+		smpp.NewFLParameter(uint8(0)),                // data_coding
+		smpp.NewFLParameter(uint8(0)),                // sm_defalt_msg_id
+		smpp.NewFLParameter(uint8(28)),
+		smpp.NewOctetStringFromString("This is a test short message"),
+	}, []*smpp.Parameter{})
+
+	f := NewDefaultPduFactory()
+
+	submitSmRespPdu := f.CreateSubmitSmRespFromRequest(submitSmPdu, "test-message-id")
+
+	if submitSmRespPdu.CommandID != smpp.CommandSubmitSmResp {
+		t.Errorf("Expected submit-sm-resp command-id = (%d), got = (%d) [%s]", smpp.CommandSubmitSmResp, submitSmRespPdu.CommandID, submitSmRespPdu.CommandName())
+	}
+
+	if submitSmRespPdu.SequenceNumber != submitSmPdu.SequenceNumber {
+		t.Errorf("Expected submit-sm-resp sequence number = (%d), but got (%d)", submitSmPdu.SequenceNumber, submitSmRespPdu.SequenceNumber)
+	}
+
+	if len(submitSmRespPdu.MandatoryParameters) != 1 {
+		t.Errorf("Expected submit-sm-resp to have 1 Mandatory Parameter, but there are %d", len(submitSmRespPdu.MandatoryParameters))
+	} else {
+		if submitSmRespPdu.MandatoryParameters[0].Type != smpp.TypeCOctetString {
+			t.Errorf("Expected submit-sm-resp first mandatory parameter to be type COctetString, but it was not")
+		} else {
+			if submitSmRespPdu.MandatoryParameters[0].Value.(string) != "test-message-id" {
+				t.Errorf("Expected submit-sm-resp first mandatory parameter to be (test-message-id), got (%s)", submitSmRespPdu.MandatoryParameters[0].Value.(string))
+			}
+		}
+	}
+
+	if len(submitSmRespPdu.OptionalParameters) != 0 {
+		t.Errorf("Expected submit-sm-resp to have 0 Optional Parameter, but there are %d", len(submitSmRespPdu.OptionalParameters))
+	}
+}
+
 func compareSubmitSmPDUs(expected *smpp.PDU, got *smpp.PDU) error {
 	if got == nil {
 		return fmt.Errorf("Expected PDU, got nil")

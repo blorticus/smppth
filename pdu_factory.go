@@ -104,7 +104,7 @@ func (factory *DefaultPduFactory) CreateSubmitSm(parameters map[string]string) (
 
 // CreateSubmitSmRespFromRequest creates a submit-sm-resp.  The message-id will be set to the messageID value.
 func (factory *DefaultPduFactory) CreateSubmitSmRespFromRequest(requestPDU *smpp.PDU, messageID string) *smpp.PDU {
-	return smpp.NewPDU(smpp.CommandSubmitSmResp, 0, 1, []*smpp.Parameter{
+	return smpp.NewPDU(smpp.CommandSubmitSmResp, 0, requestPDU.SequenceNumber, []*smpp.Parameter{
 		smpp.NewCOctetStringParameter(messageID),
 	}, []*smpp.Parameter{})
 }
