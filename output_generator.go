@@ -38,7 +38,7 @@ func (generator *StandardOutputGenerator) SayThatAPduWasReceivedByAnAgent(sendin
 			string(receivedPDU.MandatoryParameters[17].Value.([]byte)),
 		)
 	case smpp.CommandSubmitSmResp:
-		return fmt.Sprintf("%s received submit-sm from %s, message_id=(%s)",
+		return fmt.Sprintf("%s received submit-sm-resp from %s, message_id=(%s)",
 			receivingPeerName,
 			sendingAgentName,
 			receivedPDU.MandatoryParameters[0].Value.(string),
