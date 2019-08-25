@@ -269,5 +269,5 @@ func (app *StandardApplication) tryToGeneratePDUFromUserCommandDetails(details *
 func (app *StandardApplication) helpText() string {
 	return "<sending_agent_name>: send enquire-link to <peer_name>\n" +
 		"<sending_agent_name>: send submit-sm to <peer_name> [params]\n" +
-		"  params: [source_addr_ton=<ton_int>] [source_addr=<addr>] [dest_addr_ton=<ton_int>] [dest_addr=<addr>] [short_message=<message>]"
+		"  params: [source_addr_ton=<ton_int>] [source_addr=<addr>] [dest_addr_ton=<ton_int>] [destination_addr=<addr>] [short_message=<message>]"
 }
