@@ -31,20 +31,24 @@ func NewStandardOutputGenerator() *StandardOutputGenerator {
 func (generator *StandardOutputGenerator) SayThatAPduWasReceivedByAnAgent(sendingAgentName string, receivingPeerName string, receivedPDU *smpp.PDU) string {
 	switch receivedPDU.CommandID {
 	case smpp.CommandSubmitSm:
-		return fmt.Sprintf("%s received submit-sm from %s, dest_addr=(%s), short_message=(%s)",
-			receivingPeerName,
-			sendingAgentName,
-			receivedPDU.MandatoryParameters[6].Value.(string),
-			string(receivedPDU.MandatoryParameters[17].Value.([]byte)),
-		)
+		returnString := fmt.Sprintf("%s received submit-sm from %s", receivingPeerName, sendingAgentName)
+
+		if receivedPDU.MandatoryParameters[6].Value.(string) != "" {
+			returnString = fmt.Sprintf("%s, dest_addr=(%s)", returnString, receivedPDU.MandatoryParameters[6].Value.(string))
+		}
+
+		return fmt.Sprintf("%s, short_message=(%s)", returnString, string(receivedPDU.MandatoryParameters[17].Value.([]byte)))
+
 	case smpp.CommandSubmitSmResp:
 		return fmt.Sprintf("%s received submit-sm-resp from %s, message_id=(%s)",
 			receivingPeerName,
 			sendingAgentName,
 			receivedPDU.MandatoryParameters[0].Value.(string),
 		)
+
 	default:
 		return fmt.Sprintf("%s received %s from %s", receivingPeerName, receivedPDU.CommandName(), sendingAgentName)
+
 	}
 }
 
