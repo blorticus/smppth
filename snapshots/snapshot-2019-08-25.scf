@@ -1,0 +1,1612 @@
+#TMSH-VERSION: 14.1.0.3
+
+cli admin-partitions {
+    update-partition Common
+}
+apm oauth db-instance /Common/oauthdb {
+    description "Default OAuth DB."
+}
+apm report default-report {
+    report-name sessionReports/sessionSummary
+    user /Common/admin
+}
+auth password-policy {
+    policy-enforcement disabled
+}
+auth user admin {
+    description "Admin User"
+    encrypted-password $6$0V1hxcWt$/odgwOiZRKUO2LzXnt0uBO8GiojyvI1atp084T3ir7UDfMyGUKj2humiIcqucik8mcqvOG0xve71kPOXd9gG.1
+    partition-access {
+        all-partitions {
+            role admin
+        }
+    }
+    shell none
+}
+auth user f5hubblelcdadmin {
+    description f5hubblelcdadmin
+    encrypted-password dKbEvL996NnI1YEsrkWem9UA1a4XqAtH
+    partition-access {
+        all-partitions {
+            role admin
+        }
+    }
+    shell none
+}
+auth user root {
+    description root
+    encrypted-password $6$LJ4Wt1Cl$6tpz1aDkgA5JGPxhRMBzqCBRpgKKnJKwWSc7JU17nZccmdyFiSWN96DzTAcAuKHCjB6fAmcysC/4r3XvSwop21
+    shell bash
+}
+cm cert /Common/dtca-bundle.crt {
+    cache-path /config/filestore/files_d/Common_d/trust_certificate_d/:Common:dtca-bundle.crt_61246_3
+    certificate-text "-----BEGIN CERTIFICATE-----
+MIIDlzCCAn+gAwIBAgIDDOGHMA0GCSqGSIb3DQEBBQUAMC4xLDAqBgNVBAMTI2Uz
+ZTg3ZjdiLWFlYjAtNGI1Ny05NDExMmNjMjYwMmU2OGQzMB4XDTE5MDgyNDA0NTAw
+N1oXDTI5MDgyMTA0NTAwN1owLjEsMCoGA1UEAxMjZTNlODdmN2ItYWViMC00YjU3
+LTk0MTEyY2MyNjAyZTY4ZDMwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
+AQDGybxoCTRf4svEY+Quk+kHDv3xAdeNbu6VTThtz6/tNh70Qplia4XmZU0NIQnf
+pi+KSlz40sQ9czcH/io0mFbUxXVf3v3PhcIEh3gJtps7EAEU3M2BWW6LjtKnJaFw
+5Ai8wHI/chX8cvwD2C2tzk4Dol4wKNtPGuIe66N7Lb/Nn4dR12ZngdTmLpqGEWUr
+CDPKXo6nbIsw1GnR9zAzpbOXE+awRPhM0bUDp3wXsuLiHxE8yjbfye49pLzzfmjr
+kysel9mRIZlshQHCc5DLph1lbbhCRKqQHsG6aGalXg3RsIyAFgU4naErpBmhF42c
+50Y1lHRrVLMzJHnrK+zUk6yFAgMBAAGjgb0wgbowHgYDVR0RBBcwFYITYmlnaXAw
+MS5leGFtcGxlLmNvbTAPBgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIBtjAd
+BgNVHQ4EFgQUiHMThEhq6g4U2xXP+D2wC8pKEKUwWAYDVR0jBFEwT4AUiHMThEhq
+6g4U2xXP+D2wC8pKEKWhMqQwMC4xLDAqBgNVBAMTI2UzZTg3ZjdiLWFlYjAtNGI1
+Ny05NDExMmNjMjYwMmU2OGQzggMM4YcwDQYJKoZIhvcNAQEFBQADggEBAHrn5Wa+
+h4+xsqRZGJbS/2qjo0mPghx215Vw0aPr7RvmwYTrO3/RwPa6C2JgC00jdw5MZcOj
+mHt2PC6ZZ4N6KqxG0CJKk8uOEAUASfFqy8FeJfp5wu4qXOvHC29f5ddpNKOgG5vP
+hXMGGrWeZ2zZCQSYydih8Ul+/Qj73rm9a3JIFSKekjyBUwPU37vjUBp94XArtbRM
+6zfaRfwKvojOAeFTMub9d3DN4ZW8x6D3mdRpSQuEpIvsPRXs30/hXt/4Qpie45d/
+/j0xrYA/D0uRgPByNO9soK2eBUDbnENOPOOo9U97AkE1uQC6Mak/zkBZF3UZHks7
+Vh3reJPMoLgPro8=
+-----END CERTIFICATE-----
+"
+    checksum SHA1:1306:5ea6c2abaa4ca6888f408a28f04fd68bc704d4b7
+    revision 3
+}
+cm cert /Common/dtca.crt {
+    cache-path /config/filestore/files_d/Common_d/trust_certificate_d/:Common:dtca.crt_61242_3
+    certificate-text "-----BEGIN CERTIFICATE-----
+MIIDlzCCAn+gAwIBAgIDDOGHMA0GCSqGSIb3DQEBBQUAMC4xLDAqBgNVBAMTI2Uz
+ZTg3ZjdiLWFlYjAtNGI1Ny05NDExMmNjMjYwMmU2OGQzMB4XDTE5MDgyNDA0NTAw
+N1oXDTI5MDgyMTA0NTAwN1owLjEsMCoGA1UEAxMjZTNlODdmN2ItYWViMC00YjU3
+LTk0MTEyY2MyNjAyZTY4ZDMwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
+AQDGybxoCTRf4svEY+Quk+kHDv3xAdeNbu6VTThtz6/tNh70Qplia4XmZU0NIQnf
+pi+KSlz40sQ9czcH/io0mFbUxXVf3v3PhcIEh3gJtps7EAEU3M2BWW6LjtKnJaFw
+5Ai8wHI/chX8cvwD2C2tzk4Dol4wKNtPGuIe66N7Lb/Nn4dR12ZngdTmLpqGEWUr
+CDPKXo6nbIsw1GnR9zAzpbOXE+awRPhM0bUDp3wXsuLiHxE8yjbfye49pLzzfmjr
+kysel9mRIZlshQHCc5DLph1lbbhCRKqQHsG6aGalXg3RsIyAFgU4naErpBmhF42c
+50Y1lHRrVLMzJHnrK+zUk6yFAgMBAAGjgb0wgbowHgYDVR0RBBcwFYITYmlnaXAw
+MS5leGFtcGxlLmNvbTAPBgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIBtjAd
+BgNVHQ4EFgQUiHMThEhq6g4U2xXP+D2wC8pKEKUwWAYDVR0jBFEwT4AUiHMThEhq
+6g4U2xXP+D2wC8pKEKWhMqQwMC4xLDAqBgNVBAMTI2UzZTg3ZjdiLWFlYjAtNGI1
+Ny05NDExMmNjMjYwMmU2OGQzggMM4YcwDQYJKoZIhvcNAQEFBQADggEBAHrn5Wa+
+h4+xsqRZGJbS/2qjo0mPghx215Vw0aPr7RvmwYTrO3/RwPa6C2JgC00jdw5MZcOj
+mHt2PC6ZZ4N6KqxG0CJKk8uOEAUASfFqy8FeJfp5wu4qXOvHC29f5ddpNKOgG5vP
+hXMGGrWeZ2zZCQSYydih8Ul+/Qj73rm9a3JIFSKekjyBUwPU37vjUBp94XArtbRM
+6zfaRfwKvojOAeFTMub9d3DN4ZW8x6D3mdRpSQuEpIvsPRXs30/hXt/4Qpie45d/
+/j0xrYA/D0uRgPByNO9soK2eBUDbnENOPOOo9U97AkE1uQC6Mak/zkBZF3UZHks7
+Vh3reJPMoLgPro8=
+-----END CERTIFICATE-----
+"
+    checksum SHA1:1306:5ea6c2abaa4ca6888f408a28f04fd68bc704d4b7
+    revision 3
+}
+cm cert /Common/dtdi.crt {
+    cache-path /config/filestore/files_d/Common_d/trust_certificate_d/:Common:dtdi.crt_61238_3
+    certificate-text "-----BEGIN CERTIFICATE-----
+MIIDhDCCAmygAwIBAgIDDHq4MA0GCSqGSIb3DQEBBQUAMC4xLDAqBgNVBAMTI2Uz
+ZTg3ZjdiLWFlYjAtNGI1Ny05NDExMmNjMjYwMmU2OGQzMB4XDTE5MDgyNDA0NTAx
+MVoXDTI5MDgyMTA0NTAxMVowHjEcMBoGA1UEAxMTYmlnaXAwMS5leGFtcGxlLmNv
+bTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALU9qXSH8kk2tpdl8XAh
+6K2nP9FMd2Ljs/ZRFb9i9YB8FJ50Jk6IhEixgzJA21sUCvbhQJpT5kNA1IE0ispk
+ZPOF2/nJqI8WRnjlmMWlceciyw5b/Qr7dZ8pgW+qlJqOlCyWEOO2mZhr3356qkJO
+mlrGfanZB0xqPFAI2pQ85ceyHWc7DGVByIKV36E0ATYYFBElCrqeTUVYloDsi4F2
+Tvn5WURgKru91orAPxcd09T9NcYGHSLM7hYJyAsUVxCg6K7+VakBZEQtoFYOk/S5
+3H2tj7rUnlVKjv5/4LFZpBIBO6XLJ/3QqasPLIcTx4M3aHSgCtUFyqVDQaaKysiG
+IhMCAwEAAaOBujCBtzAeBgNVHREEFzAVghNiaWdpcDAxLmV4YW1wbGUuY29tMAwG
+A1UdEwEB/wQCMAAwDgYDVR0PAQH/BAQDAgWgMB0GA1UdDgQWBBSD9S2KZGeeV36A
+/rHRgLPSuQJXHjBYBgNVHSMEUTBPgBSIcxOESGrqDhTbFc/4PbALykoQpaEypDAw
+LjEsMCoGA1UEAxMjZTNlODdmN2ItYWViMC00YjU3LTk0MTEyY2MyNjAyZTY4ZDOC
+AwzhhzANBgkqhkiG9w0BAQUFAAOCAQEAdZgtcqkcJgCr+87OQCpJ5xQZUBf94BKt
+a6eT7D+kKCPevAn5MW4MWCEZb/tIOTi+jj8axlvS3VpZ+WCvs8EUwuZVNac7BJ39
+lXFA6imuYVYCMmQKG8gdZDbwQQZ4NQj+O9Z2nG/kFpmW0Pd6bszCrillgB7WMYx0
+xOhGfbRF7rXqP/V104OD3yCo3WZYKSS2tV7p4iKgolqWP/b8gUl5GnnLeTpKU4IH
+a8ulvDNquMEMlQC5SQDGbVDOOcMpVvA2G4OFxGsHsq3s9YPB7K5iJoTyQ9W9xN0Y
+5kPp+nxv0Vvd41oyRPk+cZM77v+81261Ef6A7IfGaWVOmrgnZ8j6Sg==
+-----END CERTIFICATE-----
+"
+    checksum SHA1:1281:41dbd2b59bf3b5105f7a3519c6eee40eab11a514
+    revision 3
+}
+cm device /Common/bigip01.example.com {
+    active-modules { "Best Bundle, VE-5G|N332784-8448075|Recycle, BIG-IP, VE|Rate Shaping|DNSSEC|DNS Licensed Objects, Unlimited|GTM Licensed Objects, Unlimited|GTM Rate, 250K|DNS Rate Fallback, 250K|DNS Rate Limit, 250K QPS|GTM Rate Fallback, 250K|Routing Bundle, VE|ASM, VE|DNS-GTM, Base, 5Gbps|SSL, VE|Max Compression, VE|APM, Base, VE GBB (500 CCU, 2500 Access Sessions)|AFM, VE|Exclusive Version, v12.1.X - 18.X|Anti-Virus Checks|Base Endpoint Security Checks|Firewall Checks|Machine Certificate Checks|Network Access|Protected Workspace|Secure Virtual Keyboard|APM, Web Application|App Tunnel|Remote Desktop|VE, Carrier Grade NAT (AFM ONLY)|PSM, VE" }
+    base-mac 2c:c2:60:2e:68:d3
+    build 0.0.6
+    cert /Common/dtdi.crt
+    chassis-id 414eeb41-c081-a441-2bf5f65d4040
+    edition "Point Release 3"
+    hostname bigip01.example.com
+    key /Common/dtdi.key
+    management-ip 10.1.1.6
+    marketing-name "BIG-IP Virtual Edition"
+    optional-modules { "Advanced Protocols, VE" "App Mode (TMSH Only, No Root/Bash)" "Best, 5 Gbps -10 Gbps Upgrade" "BIG-IP VE, Multicast Routing" "CGN, ADD-VE, 5G" "Concurrent Users and Access Sessions, VE" "DataSafe, VE-5G" "DNS and GTM (250 QPS), VE" "External Interface and Network HSM, VE" "FIPS 140-2 Level 1, BIG-IP VE-1G to 10G" "Intrusion Prevention System, VE-5G" "IP Intelligence, 1Yr, VE-1G/VE-3G/VE-5G" "IP Intelligence, 3Yr, VE-1G/VE-3G/VE-5G" "IPS, 1Yr, VE-1G / VE-3G / VE-5G" "IPS, 3Yr, VE-1G / VE-3G / VE-5G" "PEM, ADD-VE, 5G" "Secure Web Gateway, VE-3G-10G, 10000 Sessions, 1Yr" "Secure Web Gateway, VE-3G-10G, 10000 Sessions, 3Yr" "Secure Web Gateway, VE-3G-10G, 5000 Sessions, 1Yr" "Secure Web Gateway, VE-3G-10G, 5000 Sessions, 3Yr" "SSL Orchestrator, VE (3G/5G/10G)" "URL Filtering, VE-3G-10G, 10000 Sessions, 1Yr" "URL Filtering, VE-3G-10G, 10000 Sessions, 3Yr" "URL Filtering, VE-3G-10G, 5000 Sessions, 1Yr" "URL Filtering, VE-3G-10G, 5000 Sessions, 3Yr" "VE SSL Compression Offload, Medium" }
+    platform-id Z100
+    product BIG-IP
+    self-device true
+    time-zone America/Los_Angeles
+    version 14.1.0.3
+}
+cm device-group /Common/device_trust_group {
+    auto-sync enabled
+    devices {
+        /Common/bigip01.example.com { }
+    }
+    hidden true
+    network-failover disabled
+}
+cm device-group /Common/gtm {
+    devices {
+        /Common/bigip01.example.com { }
+    }
+    hidden true
+    network-failover disabled
+}
+cm key /Common/dtca.key {
+    cache-path /config/filestore/files_d/Common_d/trust_certificate_key_d/:Common:dtca.key_61244_3
+    certificate-text "-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDGybxoCTRf4svE
+Y+Quk+kHDv3xAdeNbu6VTThtz6/tNh70Qplia4XmZU0NIQnfpi+KSlz40sQ9czcH
+/io0mFbUxXVf3v3PhcIEh3gJtps7EAEU3M2BWW6LjtKnJaFw5Ai8wHI/chX8cvwD
+2C2tzk4Dol4wKNtPGuIe66N7Lb/Nn4dR12ZngdTmLpqGEWUrCDPKXo6nbIsw1GnR
+9zAzpbOXE+awRPhM0bUDp3wXsuLiHxE8yjbfye49pLzzfmjrkysel9mRIZlshQHC
+c5DLph1lbbhCRKqQHsG6aGalXg3RsIyAFgU4naErpBmhF42c50Y1lHRrVLMzJHnr
+K+zUk6yFAgMBAAECggEAJ6yrxbfQlDKXqKKnMASlRZtgY3GSq8+wHmxDDuecnSNo
+GigQpOwA1XLyZeRqLBDm/BrLY33tXLZaDWZU1hpxehXOz0uaLIjtqCnBc27WnHsd
+PCS1f1NyFLh0opeIGRfqBoICS1dhu/jXA41p0H6UY3VMhyAgZTFgX/t3rWX8GfWa
+jBhjwP9HB4zkTjf1YtIplCbA3e11JJIc8DTzTe10lnDcu8fXAv6LX6DXXOzXt7/z
+I+d/S9axzci7ieYqFJlJu8wci5zffPUwifdgdW4fwF65j3dZqailRF2Z7Y0UHfZF
+RG+YRaz4qJJQqr3+cpjv1g4Ck7lBM0sFM9qfqR+8AQKBgQD2q4h3k98ssTIpg6+1
+qhQBNt0MG+8ecLcH4l34S0S3DK+qNFMOo9IcxG0xJZJXcp/DmyW9YH9aAxkLWHar
+Ke25gY8hjqbVGhe6VFc8s21CglApMKWOLfWqhve2lQeRg+t+xMBFn09wYmnx25Lx
+LPc3vfBJgQ4ogj8uliisqV9YZQKBgQDOTpGjBG1rysBl1OQy0NDh0QiJL5z+KzoB
+mNGsV9hnZ66MFwVuESsnjH5EGaiEdNPMEYq70dh7ZvabykhUK7z2ciy5bJwOgK52
+k2CMNf/CpcSWJm2ccSWCq3odmsT+q9MVCa8PgWdGcQRtCQcr2SsJoh2ANuwaBk2Q
+P0CPKm7xoQKBgQCnuUcXl9J+PxZOqB4HtlfX44g2PaA/4IBzufYPaI6WsOeZIe7/
+22B48w8UBeoVz/jWNl5ZAI5XlBepYUN/awkbw/6g4LCL4iwUJFkVCyPVv2nmOA+6
+N4H9q7wvx/HXfg3YqsvaC1MmpaRIMfceSmbm3h3OvRP1c2qmsK+Dh78vCQKBgQDD
+1W0Fc3Ryt9l+UGH1oqZFVOlnX90En//F+Ew/7nsrXQ4hSNEMtBtkxUYuWrTOVx+d
+PKGWvBFkwk4hgBi8XXBX9/VgZiqU0a3KPQeO0Mtg933ukbfGotjaeu/GHl4U6QHL
+nI+ihlGEWk+7OLCn/NOPp2WdiYUBBy6lWIVt4PfDQQKBgB7q0vVgeWsHL+e/5OYC
+CEHUeKq/o0ntME4SWSL8NXK+li0eTtVOvJIpKxKGDhb/DXi8pGeGrpbHhA610iUn
+0/iT7k6PIZQD74KRXQUAcu53nJrLMMZ836Rnbsi8HkYhwiS8TYSbIwqIa0ZPLn7N
+dXFS7q1B0N7XmN2ntUHnqOTr
+-----END PRIVATE KEY-----
+"
+    checksum SHA1:1704:8c29bdea94bda926ab248ef0a28e83751af6dd76
+    revision 3
+}
+cm key /Common/dtdi.key {
+    cache-path /config/filestore/files_d/Common_d/trust_certificate_key_d/:Common:dtdi.key_61240_3
+    certificate-text "-----BEGIN PRIVATE KEY-----
+MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC1Pal0h/JJNraX
+ZfFwIeitpz/RTHdi47P2URW/YvWAfBSedCZOiIRIsYMyQNtbFAr24UCaU+ZDQNSB
+NIrKZGTzhdv5yaiPFkZ45ZjFpXHnIssOW/0K+3WfKYFvqpSajpQslhDjtpmYa99+
+eqpCTppaxn2p2QdMajxQCNqUPOXHsh1nOwxlQciCld+hNAE2GBQRJQq6nk1FWJaA
+7IuBdk75+VlEYCq7vdaKwD8XHdPU/TXGBh0izO4WCcgLFFcQoOiu/lWpAWRELaBW
+DpP0udx9rY+61J5VSo7+f+CxWaQSATulyyf90KmrDyyHE8eDN2h0oArVBcqlQ0Gm
+isrIhiITAgMBAAECggEALjZjS13Qlv927kKlndBfmkuvd4gWVuY1gGRrdanfbFv3
+C/IUxGiFxl1Q1RL5e48wPoPv64niCBrzNGC31ORlYzyp+taC/r0QygnM+vR1Bxj1
+iptE+bRlaOh14wmtK32YZYf8FXv9TQKQcZkIabDOJcA/0XuPo1nhOA0R4sNmWZTv
+s16UxmIe4ddCCQotrOfW/ph2tt02+i++FkQ2BCGpYGq0M+SmwuBpG1jvuduV/ikk
+XKo/R0VJzqMzifr7uVq8d8Ehz6Cy5IfJQnCbVr6zwgxal/iRtTijP4z35CjWlclV
+mi2NVeuTtkBm3d09AHrPFDi1yr2DSyu3INkaw+xEqQKBgQD0lC25ZUMABa/iiK8y
+Njd2CVJabPg6ADau+g3LHfybclXgULawAxIXsn9nItCf/H7j6L/JSYm7iLlaqWn+
+PKuDsMK2ZjuKQFpvlgANfKYeSOWv+jt22VPSbwQjKJ9colUx1pTxCHiJEKP1hnsi
+AsM+vBclLGj3iKKZ/5DEeWrvGwKBgQC9tE8JMK7RX7hIwVirUZHMhuCtsaYzREtN
+Pe2tHmlTC4w1KR1e4JtSsPkP2+xSrjOJSU7BFemFuU35Ma0UE1oltSAu+oxFragR
+lCzsR0iBB96Lhvp0Yn1QIeICCrgzERbhMlnVMjIKYH5FUISAzNFYHbmDlSbipp6k
+t7HOSM8waQKBgCsUztkRVTPzzH+CxBl8I1jPW4pCF5df4kIAGd3lclGPWkEg9o0a
+fV1fO8HXCBimSVOr89xo77Hw63Vk0h7OYQfZYvLuHx7DJyrwqSG3Cyvae1r8IO1W
+asVueLQYu7l9frRAsAulClZacAcXoSjkg6/RQeJyaCryDnJB6iYxnPxxAoGAYBJ+
+rGLRRgu54m64nxqSQghUpOKBDxmZIScpxTDPmlUQzqNh0njhcIFbwSJZjo3WX8KW
+dcbJGwX7bSYxRyd90fbms6QDgg4uPajTD14SY/Y+SF81W9e9KuXd9bbEDmirM6Uy
+RXxER2kSybu7Pxd7NaroFrFknghP849sJtJMy3ECgYBrl81fz73Wxl//e49L+n5I
+pBEaQ1h6NEINitDF++Sw83cNQjWZt0ukcuWKDAdxisSHR14AAJ1i863y3IiYlXCG
+XG6EU4b/AeN9B8C9OQntvAUDSb2JPMhzvFT8ftTCOphfZHea3WZFC8LsF3Uwj7Cv
+6pxzn9cTJPWCVqKDFWSO0w==
+-----END PRIVATE KEY-----
+"
+    checksum SHA1:1704:2de39e49e33b625ab4c47ddb8f4fdf7a13f299eb
+    revision 3
+}
+cm traffic-group /Common/traffic-group-1 {
+    unit-id 1
+}
+cm traffic-group /Common/traffic-group-local-only { }
+cm trust-domain /Common/Root {
+    ca-cert /Common/dtca.crt
+    ca-cert-bundle /Common/dtca-bundle.crt
+    ca-devices { /Common/bigip01.example.com }
+    ca-key /Common/dtca.key
+    guid 2654a104-e3d3-4e2e-9be52cc2602e68d3
+    status standalone
+    trust-group /Common/device_trust_group
+}
+gtm global-settings metrics {
+    metrics-collection-protocols { icmp }
+}
+gtm global-settings metrics-exclusions {
+    addresses none
+}
+ilx global-settings {
+    debug-port-blacklist { 47019 54321 60000 }
+}
+ltm default-node-monitor {
+    rule none
+}
+ltm node /Common/cluster01-smsc01 {
+    address 172.16.1.1
+}
+ltm node /Common/cluster01-smsc02 {
+    address 172.16.1.2
+}
+ltm node /Common/cluster02-smsc01 {
+    address 172.16.2.1
+}
+ltm node /Common/cluster02-smsc02 {
+    address 172.16.2.2
+}
+ltm pool /Common/pool-smscs-cluster01 {
+    members {
+        /Common/cluster01-smsc01:2775 {
+            address 172.16.1.1
+        }
+        /Common/cluster01-smsc02:2775 {
+            address 172.16.1.2
+        }
+    }
+    monitor /Common/gateway_icmp 
+}
+ltm pool /Common/pool-smscs-cluster02 {
+    members {
+        /Common/cluster02-smsc01:2775 {
+            address 172.16.2.1
+        }
+        /Common/cluster02-smsc02:2775 {
+            address 172.16.2.2
+        }
+    }
+    monitor /Common/gateway_icmp 
+}
+ltm rule /Common/config-variables-smsc-cluster-01 {
+when SERVER_CONNECTED {
+        set name_of_virtual_server_facing_this_smsc_cluster "/Common/vs-smpp-toward-smsc-cluster01"
+    }
+}
+ltm rule /Common/config-variables-smsc-cluster-02 {
+when SERVER_CONNECTED {
+        set name_of_virtual_server_facing_this_smsc_cluster "/Common/vs-smpp-toward-smsc-cluster01"
+    }
+}
+ltm rule /Common/logging {
+##
+## Simple Message Peer-to-Peer (SMPP) system_type based routing and bind management
+##
+## @version = 2
+## @date = 24 Aug 2019
+## @author = Vernon Wells (vwells@f5.com)
+
+when RULE_INIT {
+    set static::log_debug 0
+    set static::log_trace 0
+
+    array set static::smpp_command_map [list 1 bind_receiver 2 bind_transmitter 3 query_sm 4 submit_sm 5 deliver_sm 6 unbind 7 replace_sm 8 cancel_sm 9 bind_transceiver 11 outbind 21 enquire_link 33 submit_multi 259 data_sm 2147483648 generic_nack 2147483649 bind_receiver_resp 2147483650 bind_transmitter_resp 2147483651 query_sm_resp 2147483652 submit_sm_resp 2147483653 deliver_sm_resp 2147483654 unbind_resp 2147483655 replace_sm_resp 2147483656 cancel_sm_resp 2147483657 bind_transceiver_resp 2147483669 enquire_link_resp 2147483681 submit_multi_resp 2147483906 alert_notification 2147483907 data_sm_resp]
+}
+
+proc debug {msg} {
+    if { $static::log_debug } {
+        if { [clientside] } {
+            log local0.debug "(clientside) $msg"
+        } else {
+            log local0.debug "(serverside) $msg"
+        }
+    }
+}
+
+proc trace {msg} {
+    if { $static::log_trace } {
+        if { [clientside] } {
+            log local0.debug "(clientside) $msg"
+        } else {
+            log local0.debug "(serverside) $msg"
+        }
+    }
+}
+
+
+proc smpp_command_id_to_name {command_id} {
+    if { [info exists static::smpp_command_map($command_id)] } {
+        return $static::smpp_command_map($command_id)
+    } else {
+        return $command_id
+    }
+}
+}
+ltm rule /Common/smpp-clientside {
+when RULE_INIT {
+    set static::smpp_config_elements_dg "smpp-config-elements"
+}
+
+when CLIENT_ACCEPTED {
+    set proxy_side "clientside"
+    set peer_state "waiting_for_bind"
+    set incoming_buf ""
+
+    set local_seq_number 1      ;# 1 is reserved for bind message, so start at 2
+    array set seq_rewrite_table [list]
+
+    set peer_name "[IP::client_addr]:[TCP::client_port]"
+    set my_vs_or_tc_name [virtual]
+    set my_vs_or_tc_type "virtual"
+
+    call logging::debug "peer_name = ($peer_name); my_vs_or_tc_name = ($my_vs_or_tc_name); my_vs_or_tc_type = ($my_vs_or_tc_type)"
+
+    GENERICMESSAGE::peer name $peer_name
+
+    TCP::collect
+}
+
+when CLIENT_DATA {
+    append incoming_buf [TCP::payload]
+
+    TCP::payload replace 0 [TCP::payload length] ""
+    TCP::release
+    TCP::collect
+
+    # Need at least 16 octets for a header, and thus, at least 16 octets for a PDU
+    if { [string length $incoming_buf] >= 16 } {
+        binary scan $incoming_buf IIII command_length command_id command_status sequence_number
+
+        # convert $command_id to its unsigned value
+        set command_id [expr { $command_id & 0xffffffff }]
+
+        if { ($command_id & 0x80000000) == 0 } {
+            set is_request_msg 1
+        } else {
+            set is_request_msg 0
+        }
+
+        call logging::debug "is_request_msg = ($is_request_msg); command_length = ($command_length); command_id = ($command_id); command_name = ([call logging::smpp_command_id_to_name $command_id]); command_status = ($command_status); sequence_number = ($sequence_number)" 
+
+        if { $command_length > [string length $incoming_buf] } {
+            # not enough octets in collected buf for length of next PDU, so its an incomplete PDU
+            call logging::debug "Not enough octets yet collected for complete PDU"  
+            return
+        }
+
+        switch $command_id {
+            1 - 2 - 9 {                             ;# bind_* command
+                call logging::debug "Received bind_* command"  
+
+                if { $peer_state eq "waiting_for_bind" } {
+                    # send bind response
+                    set resp_command_id [expr { 0x80000000 | $command_id }]
+
+                    set my_system_id [class lookup "bigip-system-id" $static::smpp_config_elements_dg]
+
+                    # +1 is for null octet after system_id
+                    set response_message_length [expr { 16 + [string length $my_system_id] + 1 }]
+
+                    call logging::debug "resp_command_id = ($resp_command_id); resp_command_name = (command_name = ([call logging::smpp_command_id_to_name $resp_command_id])); my_system_id = ($my_system_id)"     
+                    call logging::debug "Responding to client with bind response"      
+
+                    TCP::respond [binary format IIIIa*x $response_message_length $resp_command_id 0 $sequence_number $my_system_id]
+
+                    set peer_state "bound"
+                }
+                else {
+                    #send_error_message()
+                }
+            }
+
+            2147483649 - 2147483650 - 2147483657 {  ;# bind_*_resp command
+                log local0. "Received bind resp from peer ($peer_name).  Ignoring."  ;# T=I
+            }
+
+            6 {                                     ;# unbind command
+                log local0. "Received unbind request from peer ($peer_name).  Sending unbind_resp and closing transport."     ;# T=I
+                TCP::respond [binary format IIII 16 0x80000006 0 $sequence_number]
+                TCP::close
+                return
+            }
+
+            2147483654 {                            ;# unbind_resp command
+                log local0. "Received unbind response from peer ($peer_name).  Closing transport."     ;# T=I
+                TCP::close
+            }
+
+            21 {                                    ;# enquire_link command
+                call logging::debug "Received enquire_link from peer ($peer_name).  Sending response."    
+                TCP::respond [binary format IIII 16 0x80000015 0 $sequence_number]
+            }
+
+            2147483669 {                            ;# enquire_link_resp command
+                call logging::debug "Received enquire_link response from peer ($peer_name)."
+                # ignore the message
+            }
+
+            default {
+                call logging::debug "Routing message to serverside"
+                binary scan $incoming_buf "c$command_length" binary_list
+                set message_data [binary format c* $binary_list]
+                GENERICMESSAGE::message create 
+            }
+        }
+
+        # remove current PDU from incoming buffer
+        binary scan $incoming_buf "x${command_length}c*" incoming_buf
+        set incoming_buf [binary format c* $incoming_buf]
+    }
+}
+
+
+when MR_INGRESS {
+    set reverse_peer_name $peer_name
+    set reverse_vs_or_tc_name $my_vs_or_tc_name
+    set reverse_vs_or_tc_type $my_vs_or_tc_type
+
+    MR::store reverse_peer_name reverse_vs_or_tc_name reverse_vs_or_tc_type
+}
+
+when MR_FAILED {
+    if { [MR::message retry_count] >= [MR::max_retries] } {
+        log local0. "Received dynamic-peer message that cannot be delivered after ([MR::max_retries]) retries."  ;# T=I
+        MR::message drop
+    }
+    else {
+        log local0. "Message send failed, retrying.  Status is [MR::message status]."
+        MR::message nexthop none
+        MR::retry
+    }
+}
+
+when MR_EGRESS {
+    MR::restore reverse_peer_name reverse_vs_or_tc_name reverse_vs_or_tc_type
+    call logging::debug "Restored Values: reverse_peer_name = ($reverse_peer_name), reverse_vs_or_tc_name = ($reverse_vs_or_tc_name), reverse_vs_or_tc_type = ($reverse_vs_or_tc_type)"
+}
+
+when GENERICMESSAGE_INGRESS {
+    GENERICMESSAGE::message data $message_data
+}
+
+when GENERICMESSAGE_EGRESS {
+    binary scan [GENERICMESSAGE::message data] IIII em_command_length em_command_id em_command_status em_sequence_number
+
+    if { ($em_command_id & 0x80000000) == 0 } {
+        call logging::debug "GENERICMESSAGE_EGRESS message REQUEST"
+
+        binary scan [GENERICMESSAGE::message data] x16c* em_body
+        set rewritten_seq_num [expr { 0xffffffff & [incr local_seq_number] }]
+
+        if { $rewritten_seq_num > 4294967295 } {
+            set rewritten_seq_num 2
+        }
+
+        call logging::debug "em_command_length = ($em_command_length), em_command_id = ($em_command_id), em_command_name = ([call logging::smpp_command_id_to_name $em_command_id]), em_command_status = ($em_command_status), em_sequence_number = ($em_sequence_number), rewritten_seq_num = ($rewritten_seq_num)"
+
+        call logging::debug "Writing information to sequence rewrite table for ($proxy_side-$rewritten_seq_num)"
+        set seq_rewrite_table("$proxy_side-$rewritten_seq_num") [list $em_sequence_number $reverse_peer_name $reverse_vs_or_tc_type $reverse_vs_or_tc_name]
+
+        if { [serverside] and $peer_state ne "bound" } {
+            log local0. "Queueing message for delivery once bind is completed"      ;# T=I
+            lappend queued_messages [binary format IIIIc* $em_command_length $em_command_id $em_command_status $rewritten_seq_num $em_body]
+            GENERICMESSAGE::message drop
+        }
+        else {
+            call logging::debug "Delivering message with altered sequence number ($rewritten_seq_num)"
+            TCP::respond [binary format IIIIc* $em_command_length $em_command_id $em_command_status $rewritten_seq_num $em_body]
+        }
+    }
+    else {
+        call logging::debug "GENERICMESSAGE_EGRESS message REQUEST, sending directly"
+        TCP::respond [GENERICMESSAGE::message data]
+    }
+}
+}
+ltm rule /Common/smpp-serverside {
+when RULE_INIT {
+    set static::short_code_route_pointer 0
+}
+
+proc determine_c_octet_field_length {pdu_var field_start_index max_field_length} {
+    upvar $pdu_var smpp_buffer
+    binary scan $smpp_buffer "x${field_start_index}c$max_field_length" field_octets
+    set field_length 1
+    foreach octet $field_octets {
+        if { $octet == 0 } {
+            return $field_length
+        }
+        
+        incr field_length
+    }
+
+    # PDU is invalidly formatted
+    return -1
+}
+
+proc extract_destination_addr_from_submit_sm_pdu {pdu_var} {
+    upvar $pdu_var smpp_buffer
+    set pdu_offset 16
+    if { [set field_length [call determine_c_octet_field_length smpp_buffer 16 6]] == -1 } { ;# service_type
+        return ""
+    }
+
+    incr pdu_offset $field_length
+    incr pdu_offset 2 ;# source_addr_ton, source_addr_npi
+
+    if { [set field_length [call determine_c_octet_field_length smpp_buffer $pdu_offset 21]] == -1 } { ;# source_addr
+        return ""
+    }
+
+    incr pdu_offset $field_length
+    incr pdu_offset 2 ;# dest_addr_ton, dest_addr_npi
+
+    if { [set field_length [call determine_c_octet_field_length smpp_buffer $pdu_offset 21]] == -1 } { ;# source_addr
+        return ""
+    }
+
+    binary scan $smpp_buffer "x${pdu_offset}a$field_length" dest_addr
+    return [string range $dest_addr 0 end-1]  ;# remove null
+}
+
+
+when SERVER_CONNECTED {
+    set proxy_side "serverside"
+    set peer_name "[IP::server_addr]:[TCP::server_port]"
+    set my_vs_or_tc_name [lindex [split [MR::transport]] 1]
+    set my_vs_or_tc_type "config"
+
+    GENERICMESSAGE::peer name $peer_name
+
+    call logging::debug "peer_name = ($peer_name); my_vs_or_tc_name = ($my_vs_or_tc_name); my_vs_or_tc_type = ($my_vs_or_tc_type)"
+
+    set queued_messages [list]
+
+    set incoming_buf ""
+    set local_seq_number 1      ;# 1 is reserved for bind message, so start at 2
+    array set seq_rewrite_table [list]
+
+    set route_select_counter 0
+
+    set my_system_id [class lookup "bigip-system-id" $static::smpp_config_elements_dg]
+    set password [class lookup "bigip-system-id-password" $static::smpp_config_elements_dg]
+    set system_type [class lookup "asserted-system-type" $static::smpp_config_elements_dg]
+
+    set response_cmd_length [expr { 16 + [string length $my_system_id] + 1 + [string length $password] + 1 + [string length $system_type] + 1 + 4 }]
+
+    call logging::debug "peer_name = ($peer_name); system_type = ($system_type), password = ($password), my_system_id = ($my_system_id), response_cmd_length = ($response_cmd_length)"
+
+    call logging::debug "Sending bind_transceiver"
+    TCP::respond [binary format IIIIa*xa*xa*xcccc $response_cmd_length 9 0 1 $my_system_id $password $system_type 0x34 0 0 0]
+
+    set peer_state "waiting_for_bind_resp"
+    set message_explicit_nexthop ""
+
+    TCP::collect
+}
+
+
+when SERVER_DATA {
+    append incoming_buf [TCP::payload]
+
+    TCP::payload replace 0 [TCP::payload length] ""
+    TCP::release
+    TCP::collect
+
+    # need at least 16 octets for a header, and thus, at least 16 octets for a PDU
+    if { [string length $incoming_buf] >= 16 } {
+        binary scan $incoming_buf IIII command_length command_id command_status sequence_number
+
+        set command_length [expr { $command_length & 0xffffffff }]
+
+        if { $command_length > [string length $incoming_buf] } {
+            # not enough octets in collected buf for length of next PDU, so its and incomplete PDU
+            return
+        }
+
+        # convert $command_id to its unsigned value
+        set command_id [expr { $command_id & 0xffffffff }]
+
+        if { ($command_id & 0x80000000) == 0 } {
+            set is_request_msg 1
+        } else {
+            set is_request_msg 0
+        }
+
+        call logging::debug "is_request_msg = ($is_request_msg); command_length = ($command_length), command_id = ($command_id), command_name = ([call logging::smpp_command_id_to_name $command_id]), command_status = ($command_status), sequence_number = ($sequence_number)"
+
+        switch $command_id {
+            1 - 2 - 9 {                             ;# bind_* command
+                log local0. "Received unexpected bind command from SMSC peer ([IP::server_addr]:[TCP::server_port]).  Ignoring."
+            }
+
+            2147483649 - 2147483650 - 2147483657 {  ;# bind_*_resp command
+                if { $peer_state eq "waiting_for_bind_resp" } {
+                    set peer_state "bound"
+
+                    call logging::debug "Received bind response"
+                    foreach m $queued_messages {
+                        call logging::debug "Sending queued message"
+                        TCP::respond $m
+                    }
+                }
+                #else {
+                #    send_error_message()
+                #}
+            }
+
+            6 {                                     ;# unbind command
+                log local0. "Received unbind request from peer ([IP::server_addr]:[TCP::server_port]).  Sending unbind_resp and closing transport."     ;# T=I
+                TCP::respond [binary format IIII 16 0x80000006 0 $sequence_number]
+                TCP::close
+                return
+            }
+
+            2147483654 {                            ;# unbind_resp command
+                # assume that we sent an unbind command
+                TCP::close
+            }
+
+            21 {                                    ;# enquire_link command
+                call logging::debug "Received enquire_link from peer ([IP::server_addr]:[TCP::server_port]).  Sending response."
+                TCP::respond [binary format IIII 16 0x80000015 0 $sequence_number]
+            }
+
+            2147483669 {                            ;# enquire_link_resp command
+                call logging::debug "Received enquire_link response from peer ([IP::server_addr]:[TCP::server_port])."
+                ;# ignore the message
+            }
+
+            4 {                                     ;# submit_sm
+                call logging::trace "Received submit-sm from peer ([IP::server_addr]:[TCP::server_port])."
+                set short_code [call extract_destination_addr_from_submit_sm_pdu incoming_buf]
+                call logging::trace "Message has short_code = ($short_code)"
+
+                set short_code_route [class lookup "$short_code" smpp-shortcode-routing]
+                call logging::trace "Message with short_code ($short_code) matches route = ($short_code_route)"
+
+                if { $short_code_route eq "" } {
+                    log local0.warn "Received SMSC ingress message with short_code = ($short_code).  Dropping because there is no route."
+                }
+                else {
+                    set route_list [split $short_code_route ","]
+                    set message_explicit_nexthop [lindex $route_list [expr { [incr static::short_code_route_pointer] % [llength $route_list] }]]
+                    call logging::trace "Selected nexthop = ($message_explicit_nexthop)"
+
+                    binary scan $incoming_buf "c$command_length" binary_struct
+                    GENERICMESSAGE::message create [binary format c* $binary_struct]
+                }
+            }
+
+            default {
+                call logging::debug "Received message from peer: [call logging::smpp_command_id_to_name $command_id]"
+                #GENERICMESSAGE::message create [string range $incoming_buf 0 [expr { $command_length - 1 }]]
+                binary scan $incoming_buf "c$command_length" binary_struct
+                GENERICMESSAGE::message create [binary format c* $binary_struct]
+            }
+        }
+
+        # remove current PDU from incoming buffer
+        #set incoming_buf [string range $incoming_buf $command_length end]
+        binary scan $incoming_buf "x${command_length}c*" incoming_buf
+        set incoming_buf [binary format c* $incoming_buf]
+    }
+
+}
+
+
+when GENERICMESSAGE_INGRESS {
+    if { !$is_request_msg } {
+        call logging::debug "GENERICMESSAGE_INGRESS for response message"
+
+        #binary scan [GENERICMESSAGE::message data] IIIIc* im_command_length im_command_id im_command_status im_sequence_number im_body
+        #set im_sequence_number [expr { $im_sequence_number & 0xffffffff }]
+        set sequence_number [expr { $sequence_number & 0xffffffff }]
+
+        call logging::debug "command_length = ($command_length), command_id = ($command_id), command_name = ([call logging::smpp_command_id_to_name $command_id]), command_status = ($command_status), sequence_number = ($sequence_number)"
+
+        call logging::debug "Attempting sequence rewrite table lookup for key ($proxy_side-$sequence_number)"
+        if { [info exists seq_rewrite_table("$proxy_side-$sequence_number")] } {
+            set seq_based_route_info $seq_rewrite_table("$proxy_side-$sequence_number")
+
+            call logging::debug "seq_based_route_info = ($seq_based_route_info)"
+            call logging::debug "Altering sequence number back to original value: ([lindex $seq_based_route_info 0])"
+
+            binary scan [GENERICMESSAGE::message data] x16c* im_body
+
+            GENERICMESSAGE::message data [binary format IIIIc* $command_length $command_id $command_status [lindex $seq_based_route_info 0] $im_body]
+
+            unset seq_rewrite_table("$proxy_side-$sequence_number")
+        }
+        else {
+            log local0. "No matching sequence number rewrite found"     ;# T=I
+        }
+    }
+}
+
+
+when MR_INGRESS {
+    set reverse_peer_name $peer_name
+    set reverse_vs_or_tc_name $my_vs_or_tc_name
+    set reverse_vs_or_tc_type $my_vs_or_tc_type
+
+    MR::store reverse_peer_name reverse_vs_or_tc_name reverse_vs_or_tc_type
+
+    if { $is_request_msg } {
+        call logging::debug "serverside, requires custom routing"
+
+        if { $message_explicit_nexthop ne "" } {
+            call logging::trace "Explicitly routing based on message_explicit_nexthop = ($message_explicit_nexthop), using virtual = ($name_of_virtual_server_facing_this_smsc_cluster)"
+            MR::message route virtual $name_of_virtual_server_facing_this_smsc_cluster host $message_explicit_nexthop
+        }
+
+        set message_explicit_nexthop ""
+    }
+    elseif { [info exists seq_based_route_info] } {
+        call logging::debug "MR_INGRESS for response message"
+        call logging::debug "Re-routing to [lindex $seq_based_route_info 2] ([lindex $seq_based_route_info 3]) host ([lindex $seq_based_route_info 1])"
+        MR::message route [lindex $seq_based_route_info 2] [lindex $seq_based_route_info 3] host [lindex $seq_based_route_info 1]
+    }
+}
+
+
+when MR_EGRESS {
+    MR::restore reverse_peer_name reverse_vs_or_tc_name reverse_vs_or_tc_type
+    call logging::debug "Restored Values: reverse_peer_name = ($reverse_peer_name), reverse_vs_or_tc_name = ($reverse_vs_or_tc_name), reverse_vs_or_tc_type = ($reverse_vs_or_tc_type)"
+}
+
+
+when GENERICMESSAGE_EGRESS {
+    binary scan [GENERICMESSAGE::message data] IIII em_command_length em_command_id em_command_status em_sequence_number
+
+    if { ($em_command_id & 0x80000000) == 0 } {
+        call logging::debug "GENERICMESSAGE_EGRESS message REQUEST"
+
+        binary scan [GENERICMESSAGE::message data] x16c* em_body
+        set rewritten_seq_num [expr { 0xffffffff & [incr local_seq_number] }]
+
+        if { $rewritten_seq_num > 4294967295 } {
+            set rewritten_seq_num 2
+        }
+
+        call logging::debug "em_command_length = ($em_command_length), em_command_id = ($em_command_id), em_command_name = ([call logging::smpp_command_id_to_name $em_command_id]), em_command_status = ($em_command_status), em_sequence_number = ($em_sequence_number), rewritten_seq_num = ($rewritten_seq_num)"
+
+        call logging::debug "Writing information to sequence rewrite table for ($proxy_side-$rewritten_seq_num)"
+        set seq_rewrite_table("$proxy_side-$rewritten_seq_num") [list $em_sequence_number $reverse_peer_name $reverse_vs_or_tc_type $reverse_vs_or_tc_name]
+
+        if { [serverside] and $peer_state ne "bound" } {
+            call logging::debug "Queueing message for delivery once bind is completed"
+            lappend queued_messages [binary format IIIIc* $em_command_length $em_command_id $em_command_status $rewritten_seq_num $em_body]
+            GENERICMESSAGE::message drop
+        }
+        else {
+            call logging::debug "Delivering message with altered sequence number ($rewritten_seq_num)"
+            TCP::respond [binary format IIIIc* $em_command_length $em_command_id $em_command_status $rewritten_seq_num $em_body]
+        }
+    }
+    else {
+        call logging::debug "GENERICMESSAGE_EGRESS message REQUEST, sending directly"
+        TCP::respond [GENERICMESSAGE::message data]
+    }
+}
+
+
+when MR_FAILED {
+    log local0. "MR_FAILED for serverside incoming message: [MR::message status]"
+}
+}
+ltm snat-translation /Common/172.16.100.1 {
+    address 172.16.100.1
+    inherited-traffic-group true
+    traffic-group /Common/traffic-group-1
+}
+ltm snatpool /Common/snatpool-smsc-facing-sources {
+    members {
+        /Common/172.16.100.1
+    }
+}
+ltm virtual /Common/vs-smpp-toward-smsc-cluster01 {
+    creation-time 2019-08-24:14:29:46
+    destination /Common/192.168.100.1:2775
+    ip-protocol tcp
+    last-modified-time 2019-08-24:15:07:38
+    mask 255.255.255.255
+    profiles {
+        /Common/f5-tcp-progressive { }
+        /Common/router-toward-smsc-cluster01 { }
+        /Common/smpp { }
+    }
+    rules {
+        /Common/smpp-clientside
+    }
+    source 0.0.0.0/0
+    translate-address enabled
+    translate-port enabled
+}
+ltm virtual /Common/vs-smpp-toward-smsc-cluster02 {
+    creation-time 2019-08-24:14:30:02
+    destination /Common/192.168.100.2:2775
+    ip-protocol tcp
+    last-modified-time 2019-08-24:15:07:43
+    mask 255.255.255.255
+    profiles {
+        /Common/f5-tcp-progressive { }
+        /Common/router-toward-smsc-cluster02 { }
+        /Common/smpp { }
+    }
+    rules {
+        /Common/smpp-clientside
+    }
+    source 0.0.0.0/0
+    translate-address enabled
+    translate-port enabled
+}
+ltm virtual-address /Common/192.168.100.1 {
+    address 192.168.100.1
+    arp enabled
+    mask 255.255.255.255
+    traffic-group /Common/traffic-group-1
+}
+ltm virtual-address /Common/192.168.100.2 {
+    address 192.168.100.2
+    arp enabled
+    mask 255.255.255.255
+    traffic-group /Common/traffic-group-1
+}
+ltm data-group internal /Common/smpp-config-elements {
+    records {
+        asserted-system-type {
+            data bigip
+        }
+        bigip-system-id {
+            data bigip01
+        }
+        bigip-system-id-password {
+            data test
+        }
+    }
+    type string
+}
+ltm data-group internal /Common/smpp-shortcode-routing {
+    records {
+        11211 {
+            data 192.168.1.1%0:2775,192.168.1.2%0:2775
+        }
+        33433 {
+            data 192.168.2.1%0:2775,192.168.2.2%0:2775
+        }
+        55655 {
+            data 192.168.3.1%0:2775,192.168.3.2%0:2775
+        }
+        default {
+            data 192.168.1.1%0:2775,192.168.1.2%0:2775
+        }
+    }
+    type string
+}
+ltm message-routing generic peer /Common/peer-smsc-cluster01 {
+    pool /Common/pool-smscs-cluster01
+    transport-config /Common/tc-toward-smsc-cluster01
+}
+ltm message-routing generic peer /Common/peer-smsc-cluster02 {
+    pool /Common/pool-smscs-cluster02
+    transport-config /Common/tc-toward-smsc-cluster02
+}
+ltm message-routing generic protocol /Common/smpp {
+    app-service none
+    description "Short Message Peer-to-Peer"
+    disable-parser yes
+    no-response yes
+}
+ltm message-routing generic route /Common/route-smsc-cluster01 {
+    peers {
+        /Common/peer-smsc-cluster01
+    }
+}
+ltm message-routing generic route /Common/route-smsc-cluster02 {
+    peers {
+        /Common/peer-smsc-cluster02
+    }
+}
+ltm message-routing generic router /Common/router-toward-smsc-cluster01 {
+    app-service none
+    routes {
+        /Common/route-smsc-cluster01
+    }
+}
+ltm message-routing generic router /Common/router-toward-smsc-cluster02 {
+    app-service none
+    routes {
+        /Common/route-smsc-cluster02
+    }
+}
+ltm message-routing generic transport-config /Common/tc-toward-smsc-cluster01 {
+    ip-protocol tcp
+    profiles {
+        /Common/f5-tcp-progressive { }
+        /Common/smpp { }
+    }
+    rules {
+        /Common/smpp-serverside
+        /Common/config-variables-smsc-cluster-01
+    }
+    source-address-translation {
+        pool /Common/snatpool-smsc-facing-sources
+        type snat
+    }
+}
+ltm message-routing generic transport-config /Common/tc-toward-smsc-cluster02 {
+    ip-protocol tcp
+    profiles {
+        /Common/f5-tcp-progressive { }
+        /Common/smpp { }
+    }
+    rules {
+        /Common/smpp-serverside
+        /Common/config-variables-smsc-cluster-02
+    }
+    source-address-translation {
+        pool /Common/snatpool-smsc-facing-sources
+        type snat
+    }
+}
+net interface 1.1 {
+    media-fixed 10000T-FD
+}
+net interface 1.2 {
+    media-fixed 10000T-FD
+}
+net port-list /Common/_sys_self_allow_tcp_defaults {
+    ports {
+        22 { }
+        53 { }
+        161 { }
+        443 { }
+        1029-1043 { }
+        4353 { }
+    }
+}
+net port-list /Common/_sys_self_allow_udp_defaults {
+    ports {
+        53 { }
+        161 { }
+        520 { }
+        1026 { }
+        4353 { }
+    }
+}
+net route-domain /Common/0 {
+    id 0
+    vlans {
+        /Common/http-tunnel
+        /Common/socks-tunnel
+        /Common/ESMEs
+        /Common/SMSCs
+    }
+}
+net self /Common/toward-rcs02 {
+    address 192.168.2.245/24
+    traffic-group /Common/traffic-group-local-only
+    vlan /Common/ESMEs
+}
+net self /Common/toward-smsc-cluster02 {
+    address 172.16.2.245/24
+    traffic-group /Common/traffic-group-local-only
+    vlan /Common/SMSCs
+}
+net self /Common/toward-smsc-cluster01 {
+    address 172.16.1.245/24
+    traffic-group /Common/traffic-group-local-only
+    vlan /Common/SMSCs
+}
+net self /Common/toward-rcs01 {
+    address 192.168.1.245/24
+    traffic-group /Common/traffic-group-local-only
+    vlan /Common/ESMEs
+}
+net self /Common/toward-rcs03 {
+    address 192.168.3.245/24
+    traffic-group /Common/traffic-group-local-only
+    vlan /Common/ESMEs
+}
+net self-allow {
+    defaults {
+        igmp:0
+        ospf:0
+        pim:0
+        tcp:161
+        tcp:22
+        tcp:4353
+        tcp:443
+        tcp:53
+        udp:1026
+        udp:161
+        udp:4353
+        udp:520
+        udp:53
+    }
+}
+net stp /Common/cist {
+    interfaces {
+        1.1 {
+            external-path-cost 200000
+            internal-path-cost 200000
+        }
+        1.2 {
+            external-path-cost 200000
+            internal-path-cost 200000
+        }
+    }
+    vlans {
+        /Common/ESMEs
+        /Common/SMSCs
+    }
+}
+net vlan /Common/ESMEs {
+    interfaces {
+        1.2 { }
+    }
+    sflow {
+        poll-interval-global no
+        sampling-rate-global no
+    }
+    tag 4093
+}
+net vlan /Common/SMSCs {
+    interfaces {
+        1.1 { }
+    }
+    sflow {
+        poll-interval-global no
+        sampling-rate-global no
+    }
+    tag 4094
+}
+net fdb tunnel /Common/http-tunnel { }
+net fdb tunnel /Common/socks-tunnel { }
+net fdb vlan /Common/ESMEs { }
+net fdb vlan /Common/SMSCs { }
+net ipsec ike-daemon /Common/ikedaemon {
+    log-publisher /Common/default-ipsec-log-publisher
+}
+net tunnels tunnel /Common/http-tunnel {
+    description "Tunnel for http-explicit profile"
+    profile /Common/tcp-forward
+}
+net tunnels tunnel /Common/socks-tunnel {
+    description "Tunnel for socks profile"
+    profile /Common/tcp-forward
+}
+pem global-settings analytics { }
+pem global-settings gx { }
+pem global-settings policy { }
+security bot-defense profile /Common/bot-defense {
+    app-service none
+    whitelist {
+        apple_touch_1 {
+            match-order 2
+            url /apple-touch-icon*.png
+        }
+        favicon_1 {
+            match-order 1
+            url /favicon.ico
+        }
+    }
+}
+security bot-defense profile /Common/bot-defense-device-id-generate-after-access {
+    api-access-strict-mitigation disabled
+    app-service none
+    class-overrides {
+        "/Common/Malicious Bot" { }
+        "/Common/Mobile Application" { }
+        "/Common/Suspicious Browser" { }
+        "/Common/Trusted Bot" {
+            mitigation {
+                action alarm
+            }
+        }
+        "/Common/Untrusted Bot" { }
+        /Common/Browser { }
+        /Common/Unknown { }
+    }
+    deviceid-mode generate-after-access
+    dos-attack-strict-mitigation disabled
+    perform-challenge-in-transparent enabled
+    whitelist {
+        apple_touch_1 {
+            match-order 2
+            url /apple-touch-icon*.png
+        }
+        favicon_1 {
+            match-order 1
+            url /favicon.ico
+        }
+    }
+}
+security bot-defense profile /Common/bot-defense-device-id-generate-before-access {
+    api-access-strict-mitigation disabled
+    app-service none
+    class-overrides {
+        "/Common/Malicious Bot" { }
+        "/Common/Mobile Application" { }
+        "/Common/Suspicious Browser" { }
+        "/Common/Trusted Bot" {
+            mitigation {
+                action alarm
+            }
+        }
+        "/Common/Untrusted Bot" { }
+        /Common/Browser { }
+        /Common/Unknown { }
+    }
+    deviceid-mode generate-before-access
+    dos-attack-strict-mitigation disabled
+    perform-challenge-in-transparent enabled
+    whitelist {
+        apple_touch_1 {
+            match-order 2
+            url /apple-touch-icon*.png
+        }
+        favicon_1 {
+            match-order 1
+            url /favicon.ico
+        }
+    }
+}
+security bot-defense profile /Common/bot-defense-device-id-none {
+    api-access-strict-mitigation disabled
+    app-service none
+    class-overrides {
+        "/Common/Malicious Bot" { }
+        "/Common/Mobile Application" { }
+        "/Common/Suspicious Browser" { }
+        "/Common/Trusted Bot" {
+            mitigation {
+                action alarm
+            }
+        }
+        "/Common/Untrusted Bot" { }
+        /Common/Browser { }
+        /Common/Unknown { }
+    }
+    deviceid-mode none
+    dos-attack-strict-mitigation disabled
+    perform-challenge-in-transparent disabled
+    whitelist {
+        apple_touch_1 {
+            match-order 2
+            url /apple-touch-icon*.png
+        }
+        favicon_1 {
+            match-order 1
+            url /favicon.ico
+        }
+    }
+}
+security device-id attribute /Common/att01 {
+    id 1
+}
+security device-id attribute /Common/att02 {
+    id 2
+}
+security device-id attribute /Common/att03 {
+    id 3
+}
+security device-id attribute /Common/att04 {
+    id 4
+}
+security device-id attribute /Common/att05 {
+    id 5
+}
+security device-id attribute /Common/att06 {
+    id 6
+}
+security device-id attribute /Common/att07 {
+    id 7
+}
+security device-id attribute /Common/att08 {
+    id 8
+}
+security device-id attribute /Common/att09 {
+    id 9
+}
+security device-id attribute /Common/att10 {
+    id 10
+}
+security device-id attribute /Common/att11 {
+    id 11
+}
+security device-id attribute /Common/att12 {
+    id 12
+}
+security device-id attribute /Common/att13 {
+    id 13
+}
+security device-id attribute /Common/att14 {
+    id 14
+}
+security device-id attribute /Common/att15 {
+    id 15
+}
+security device-id attribute /Common/att16 {
+    id 16
+}
+security device-id attribute /Common/att17 {
+    id 17
+}
+security device-id attribute /Common/att18 {
+    id 18
+}
+security device-id attribute /Common/att19 {
+    id 19
+}
+security device-id attribute /Common/att20 {
+    id 20
+}
+security device-id attribute /Common/att21 {
+    id 21
+}
+security device-id attribute /Common/att22 {
+    id 22
+}
+security device-id attribute /Common/att23 {
+    id 23
+}
+security device-id attribute /Common/att24 {
+    id 24
+}
+security device-id attribute /Common/att25 {
+    id 25
+}
+security device-id attribute /Common/att26 {
+    id 26
+}
+security device-id attribute /Common/att27 {
+    id 27
+}
+security device-id attribute /Common/att28 {
+    id 28
+}
+security device-id attribute /Common/att29 {
+    id 29
+}
+security device-id attribute /Common/att30 {
+    id 30
+}
+security device-id attribute /Common/att31 {
+    id 31
+}
+security device-id attribute /Common/att32 {
+    id 32
+}
+security device-id attribute /Common/att33 {
+    id 33
+}
+security device-id attribute /Common/att34 {
+    id 34
+}
+security device-id attribute /Common/att35 {
+    id 35
+}
+security device-id attribute /Common/att36 {
+    id 36
+}
+security device-id attribute /Common/att37 {
+    id 37
+}
+security device-id attribute /Common/att38 {
+    id 38
+}
+security device-id attribute /Common/att39 {
+    id 39
+}
+security dos ipv6-ext-hdr /Common/dos-ipv6-ext-hdr {
+    frame-types { auth dstopt esp frag hbh mobility route }
+}
+security dos udp-portlist /Common/dos-udp-portlist {
+    list-type exclude-listed-ports
+}
+security firewall config-change-log {
+    log-publisher /Common/local-db-publisher
+}
+security firewall config-entity-id /Common/uuid_entity_id {
+    entity-id 3806296289905591939
+}
+security firewall port-list /Common/_sys_self_allow_tcp_defaults {
+    ports {
+        22 { }
+        53 { }
+        161 { }
+        443 { }
+        1029-1043 { }
+        4353 { }
+    }
+}
+security firewall port-list /Common/_sys_self_allow_udp_defaults {
+    ports {
+        53 { }
+        161 { }
+        520 { }
+        1026 { }
+        4353 { }
+    }
+}
+security firewall rule-list /Common/_sys_self_allow_all {
+    rules {
+        _sys_allow_all {
+            action accept
+            ip-protocol any
+        }
+    }
+}
+security firewall rule-list /Common/_sys_self_allow_defaults {
+    rules {
+        _sys_allow_tcp_defaults {
+            action accept
+            ip-protocol tcp
+            destination {
+                port-lists {
+                    /Common/_sys_self_allow_tcp_defaults
+                }
+            }
+        }
+        _sys_allow_udp_defaults {
+            action accept
+            ip-protocol udp
+            destination {
+                port-lists {
+                    /Common/_sys_self_allow_udp_defaults
+                }
+            }
+        }
+        _sys_allow_ospf_defaults {
+            action accept
+            ip-protocol ospf
+        }
+        _sys_allow_pim_defaults {
+            action accept
+            ip-protocol pim
+        }
+        _sys_allow_igmp_defaults {
+            action accept
+            ip-protocol igmp
+        }
+    }
+}
+security firewall rule-list /Common/_sys_self_allow_management {
+    rules {
+        _sys_allow_ssh {
+            action accept
+            ip-protocol tcp
+            destination {
+                ports {
+                    22 { }
+                }
+            }
+        }
+        _sys_allow_web {
+            action accept
+            ip-protocol tcp
+            destination {
+                ports {
+                    443 { }
+                }
+            }
+        }
+    }
+}
+security ip-intelligence policy /Common/ip-intelligence { }
+security scrubber profile /Common/scrubber-profile-default {
+    advertisement-ttl 300
+}
+security shared-objects port-list /Common/_sys_self_allow_tcp_defaults {
+    ports {
+        22 { }
+        53 { }
+        161 { }
+        443 { }
+        1029-1043 { }
+        4353 { }
+    }
+}
+security shared-objects port-list /Common/_sys_self_allow_udp_defaults {
+    ports {
+        53 { }
+        161 { }
+        520 { }
+        1026 { }
+        4353 { }
+    }
+}
+sys compatibility-level {
+    level 0
+}
+sys db adm.block.enable {
+    value "1"
+}
+sys db log.ftp.level {
+    value "Error"
+}
+sys db ssl.certrequest.commonname {
+    value "bigip01.example.com"
+}
+sys db ssl.certrequest.divisionname {
+    value "F5"
+}
+sys db ssl.certrequest.localityname {
+    value "Seattle"
+}
+sys db ssl.certrequest.organizationname {
+    value "F5"
+}
+sys db ssl.certrequest.stateorprovincename {
+    value "WA"
+}
+sys db systemauth.disablerootlogin {
+    value "true"
+}
+sys db tmm.dhcp.client.connection.packets.inprogress.max {
+    value "2000"
+}
+sys db tmm.dhcp.server.connection.packets.inprogress.max {
+    value "2000"
+}
+sys dns {
+    description configured-by-dhcp
+    name-servers { 10.1.1.2 }
+    search { workgroup }
+}
+sys feature-module cgnat {
+    disabled
+}
+sys folder / {
+    device-group none
+    hidden false
+    inherited-devicegroup false
+    inherited-traffic-group false
+    traffic-group /Common/traffic-group-1
+}
+sys folder /Common {
+    device-group none
+    hidden false
+    inherited-devicegroup true
+    inherited-traffic-group true
+    traffic-group /Common/traffic-group-1
+}
+sys folder /Common/Drafts {
+    device-group none
+    hidden false
+    inherited-devicegroup true
+    inherited-traffic-group true
+    traffic-group /Common/traffic-group-1
+}
+sys global-settings {
+    gui-setup disabled
+    hostname bigip01.example.com
+}
+sys management-dhcp /Common/sys-mgmt-dhcp-config {
+    request-options { subnet-mask broadcast-address routers domain-name domain-name-servers host-name ntp-servers interface-mtu }
+}
+sys management-ovsdb {
+    bfd-disabled
+    bfd-route-domain none
+    ca-cert-file none
+    cert-file none
+    cert-key-file none
+    disabled
+    flooding-type replicator
+    log-level info
+    logical-routing-type none
+    tunnel-maintenance-mode active
+}
+sys provision ltm {
+    level nominal
+}
+sys snmp {
+    agent-addresses { tcp6:161 udp6:161 }
+    communities {
+        /Common/comm-public {
+            community-name public
+            source default
+        }
+    }
+    disk-monitors {
+        /Common/root {
+            minspace 2000
+            path /
+        }
+        /Common/var {
+            minspace 10000
+            path /var
+        }
+    }
+    process-monitors {
+        /Common/bigd {
+            max-processes infinity
+            process bigd
+        }
+        /Common/chmand {
+            process chmand
+        }
+        /Common/httpd {
+            max-processes infinity
+            process httpd
+        }
+        /Common/mcpd {
+            process mcpd
+        }
+        /Common/sod {
+            process sod
+        }
+        /Common/tmm {
+            max-processes infinity
+            process tmm
+        }
+    }
+}
+sys diags ihealth {
+    expiration 30
+    options none
+    password none
+    user none
+}
+sys dynad settings {
+    development-mode false
+}
+sys ecm cloud-provider /Common/aws-ec2 {
+    description "The aws-ec2 parameters"
+    property-template {
+        account { }
+        availability-zone {
+            valid-values { a b c d }
+        }
+        instance-type {
+            valid-values { t2.micro t2.small t2.medium m3.medium m3.large m3.xlarge m3.2xlarge c3.large c3.xlarge c3.2xlarge c3.4xlarge c3.8xlarge r3.large r3.xlarge r3.2xlarge r3.4xlarge r3.8xlarge }
+        }
+        region {
+            valid-values { us-east-1 us-west-1 us-west-2 sa-east-1 eu-west-1 eu-central-1 ap-southeast-2 ap-southeast-1 ap-northeast-1 }
+        }
+    }
+}
+sys ecm cloud-provider /Common/dnet {
+    description "The dnet parameters"
+}
+sys ecm cloud-provider /Common/vsphere {
+    description "The vsphere parameters"
+    property-template {
+        cloud-host-ip { }
+        dhcp-network-name { }
+        end-point-url { }
+        node-name { }
+    }
+}
+sys file ssl-key /Common/f5_api_com.key {
+    cache-path /config/filestore/files_d/Common_d/certificate_key_d/:Common:f5_api_com.key_61362_1
+    passphrase $M$Jz$b98uyz9yQOTEIu5bRAXhh17YQrFLfZkpuHE/+cIC7/FmhEyhU2sgCezuW1069KTfHcASdw0owigXNa9eTecEaSyuEH/LzOCFbNi6HNOuu+k=
+    revision 1
+    source-path file:///config/ssl/ssl.key/f5_api_com.key
+}
+sys fpga firmware-config {
+    type standard-balanced-fpga
+}
+sys sflow global-settings http { }
+sys sflow global-settings vlan { }
+sys software update {
+    auto-check enabled
+    auto-phonehome enabled
+    frequency weekly
+}
+wom endpoint-discovery { }

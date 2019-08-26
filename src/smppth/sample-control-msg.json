@@ -1,9 +1,0 @@
-{
-    "action": "SendMessage",
-    "sender": "esme01",
-    "recipient": "smsc01",
-    "message": {
-        "command": "submit_sm",
-        "short_message": "this is a message from esme01 to smsc01"
-    }
-}

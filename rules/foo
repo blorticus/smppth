@@ -1,0 +1,4 @@
+rcs01-tp01: send submit-sm to cluster02-vs
+cluster02-smsc02: send submit-sm to bigip01 destination_addr=11211
+cluster02-smsc01: send submit-sm to bigip01 destination_addr=11211
+
