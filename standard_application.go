@@ -180,11 +180,9 @@ func (app *StandardApplication) Start() {
 // agent sends the message to the identified peer.  If there is an error (e.g., if the identified sending agent
 // is not under management by the associated AgentGroup), the error text is written to the EventOutputWriter.
 func (app *StandardApplication) ReceiveNextCommand(command *UserCommand) {
-	app.debugLogger.Printf("(ReceiveNextCommand)") // DEBUG
 	switch command.Type {
 	case SendPDU:
 		commandDetails := command.Details.(*SendPduDetails)
-		app.debugLogger.Printf("Received SendPDU command\n") // DEBUG
 		generatedPDU, err := app.tryToGeneratePDUFromUserCommandDetails(commandDetails)
 
 		if err != nil {
@@ -197,11 +195,9 @@ func (app *StandardApplication) ReceiveNextCommand(command *UserCommand) {
 		}
 
 	case Help:
-		app.debugLogger.Println("Received Help request") // DEBUG
 		fmt.Fprintf(app.eventOutputWriter, app.helpText())
 
 	case Quit:
-		app.debugLogger.Println("Received Quit request") // DEBUG
 		app.quitCommandCallback()
 	}
 }

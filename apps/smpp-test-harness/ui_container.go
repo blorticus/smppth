@@ -53,6 +53,10 @@ func (ui *TestHarnessTextUI) createCommandHistoryTextView() *TestHarnessTextUI {
 		SetTitle("Command History").
 		SetTitleAlign(tview.AlignLeft)
 
+	ui.userCommandHistoryTextView.SetChangedFunc(func() {
+		ui.tviewApplication.Draw()
+	})
+
 	return ui
 }
 
@@ -74,7 +78,6 @@ func (ui *TestHarnessTextUI) createCommandInputField() *TestHarnessTextUI {
 				}
 				ui.sendNextInputCommandToChannelWithoutBlocking(userProvidedCommandText)
 				ui.userCommandInputField.SetText("")
-				//ui.tviewApplication.Draw()
 			}
 		})
 
@@ -107,7 +110,11 @@ func (ui *TestHarnessTextUI) createEventOutputTextView() *TestHarnessTextUI {
 	ui.eventOutputTextView.
 		SetBorder(true).
 		SetTitle("Events").
-		SetTitleAlign(tview.AlignLeft) //.SetChangedFunc()
+		SetTitleAlign(tview.AlignLeft)
+
+	ui.eventOutputTextView.SetChangedFunc(func() {
+		ui.tviewApplication.Draw()
+	})
 
 	return ui
 }
@@ -161,21 +168,14 @@ func (ui *TestHarnessTextUI) UserInputStringCommandChannel() <-chan string {
 // This means the next string line written will have a newline between it (the next
 // string, that is) and the line written here
 func (ui *TestHarnessTextUI) WriteLineToEventBox(line string) {
-	ui.debugLogPrintf("(ui.WriteLineToEventBox())") // DEBUG
 	if ui.eventOutputTextView.GetText(false) == "" {
-		ui.debugLogPrintf("branch 1") // DEBUG
 		fmt.Fprintf(ui.eventOutputTextView, line)
 	} else {
-		ui.debugLogPrintf("branch 2") // DEBUG
 		fmt.Fprintf(ui.eventOutputTextView, "\n%s", line)
 	}
-	ui.debugLogPrintf("out of branch") // DEBUG
-	//ui.tviewApplication.Draw()
-	ui.debugLogPrintf("return from Draw()") // DEBUG
 }
 
 func (ui *TestHarnessTextUI) Write(p []byte) (n int, err error) {
-	ui.debugLogPrintf("(ui.Write())") // DEBUG
 	ui.WriteLineToEventBox(string(p))
 	return len(p), nil
 }
