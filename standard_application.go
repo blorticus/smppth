@@ -14,7 +14,7 @@ import (
 // StandardApplication provides a standard method for accepting user input commands (marshalled to UserCommand structs),
 // generate smpp PDUs (if the command is 'SendPDU'), respond to known PDU types (e.g., send enquire-link-resp in response
 // to an enquire-link), and produce standard text output to an io.Writer, based on a supplied OutputGenerator.  By default,
-// the application uses a StandardOutputGenerate and a DefaultPduFactory, but these can be overridden.  Some of the output
+// the application uses a StandardOutputGenerator and a DefaultPduFactory, but these can be overridden.  Some of the output
 // is based on events that arrive on a supplied AgentEvent channel.  If the creator of the StandardApplication would also
 // like to see the AgentEvent messages, a call to AttachEventChannel() returns a channel to which the AgentEvent messages
 // are proxied.
@@ -180,9 +180,11 @@ func (app *StandardApplication) Start() {
 // agent sends the message to the identified peer.  If there is an error (e.g., if the identified sending agent
 // is not under management by the associated AgentGroup), the error text is written to the EventOutputWriter.
 func (app *StandardApplication) ReceiveNextCommand(command *UserCommand) {
+	app.debugLogger.Printf("(ReceiveNextCommand)") // DEBUG
 	switch command.Type {
 	case SendPDU:
 		commandDetails := command.Details.(*SendPduDetails)
+		app.debugLogger.Printf("Received SendPDU command\n") // DEBUG
 		generatedPDU, err := app.tryToGeneratePDUFromUserCommandDetails(commandDetails)
 
 		if err != nil {
@@ -195,9 +197,11 @@ func (app *StandardApplication) ReceiveNextCommand(command *UserCommand) {
 		}
 
 	case Help:
+		app.debugLogger.Println("Received Help request") // DEBUG
 		fmt.Fprintf(app.eventOutputWriter, app.helpText())
 
 	case Quit:
+		app.debugLogger.Println("Received Quit request") // DEBUG
 		app.quitCommandCallback()
 	}
 }

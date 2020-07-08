@@ -39,7 +39,7 @@ type sendCommandCompare struct {
 
 func TestValidSendCommandsWithoutParameters(t *testing.T) {
 	testSet := []*sendCommandCompare{
-		&sendCommandCompare{
+		{
 			commandToTest: "foo: send submit-sm to bar",
 			expectedStruct: &UserCommand{
 				Type: SendPDU,
@@ -51,7 +51,7 @@ func TestValidSendCommandsWithoutParameters(t *testing.T) {
 				},
 			},
 		},
-		&sendCommandCompare{
+		{
 			commandToTest: "foo: send enquire-link to bar",
 			expectedStruct: &UserCommand{
 				Type: SendPDU,
@@ -82,7 +82,7 @@ func TestValidSendCommandsWithoutParameters(t *testing.T) {
 
 func TestValidSendCommandsWithParameters(t *testing.T) {
 	testSet := []*sendCommandCompare{
-		&sendCommandCompare{
+		{
 			commandToTest: `foo: send submit-sm to bar short_message="This is a short message" dest_addr=001100`,
 			expectedStruct: &UserCommand{
 				Type: SendPDU,
@@ -94,7 +94,7 @@ func TestValidSendCommandsWithParameters(t *testing.T) {
 				},
 			},
 		},
-		&sendCommandCompare{
+		{
 			commandToTest: `foo: send enquire-link to bar alpha= beta=gamma`,
 			expectedStruct: &UserCommand{
 				Type: SendPDU,

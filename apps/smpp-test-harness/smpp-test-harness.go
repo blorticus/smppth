@@ -31,6 +31,8 @@ func main() {
 	agentGroup.AttachDebugLoggerWriter(debugLogger.Writer())
 
 	ui := BuildUserInterface()
+	ui.AttachDebugLogger(debugLogger)
+
 	commandInputTextChannel := ui.UserInputStringCommandChannel()
 
 	application := smppth.NewStandardApplication().
@@ -41,6 +43,8 @@ func main() {
 		SetEventOutputWriter(ui)
 
 	application.AttachEventChannel(agentGroup.SharedAgentEventChannel())
+
+	application.EnableDebugMessages(debugLogger.Writer())
 
 	go application.Start()
 	go startListeningForUserCommands(commandInputTextChannel, ui, application)
@@ -54,11 +58,13 @@ func startListeningForUserCommands(commandInputTextChannel <-chan string, ui *Te
 
 	for {
 		nextUserCommandText := <-commandInputTextChannel
+
 		userCommandStruct, err := textCommandProcessor.ConvertCommandLineStringToUserCommand(nextUserCommandText)
 
 		if err != nil {
 			ui.WriteLineToEventBox(fmt.Sprintf("[ERROR] Invalid command (%s)", nextUserCommandText))
 		} else {
+			debugLogger.Printf("(main) Received next command: %s", nextUserCommandText)
 			app.ReceiveNextCommand(userCommandStruct)
 		}
 	}

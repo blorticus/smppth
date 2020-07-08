@@ -66,7 +66,7 @@ TransceiverBinds:
 			ip:   net.ParseIP("10.1.1.1"),
 			port: uint16(2775),
 			peerBinds: []smppBindInfo{
-				smppBindInfo{
+				{
 					smscName:   "smsc-cluster01-vs",
 					remoteIP:   net.ParseIP("192.168.1.1"),
 					remotePort: uint16(2775),
@@ -74,7 +74,7 @@ TransceiverBinds:
 					password:   "passwd1",
 					systemType: "rcs",
 				},
-				smppBindInfo{
+				{
 					smscName:   "smsc-cluster02-vs",
 					remoteIP:   net.ParseIP("192.168.1.2"),
 					remotePort: uint16(2775),
@@ -93,7 +93,7 @@ TransceiverBinds:
 			ip:   net.ParseIP("10.1.1.2"),
 			port: uint16(2775),
 			peerBinds: []smppBindInfo{
-				smppBindInfo{
+				{
 					smscName:   "smsc-cluster01-vs",
 					remoteIP:   net.ParseIP("192.168.1.1"),
 					remotePort: uint16(2775),
@@ -101,7 +101,7 @@ TransceiverBinds:
 					password:   "passwd1",
 					systemType: "rcs",
 				},
-				smppBindInfo{
+				{
 					smscName:   "smsc-cluster02-vs",
 					remoteIP:   net.ParseIP("192.168.1.2"),
 					remotePort: uint16(2775),

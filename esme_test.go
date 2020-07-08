@@ -69,7 +69,7 @@ func TestEsmeOneSmscEndpoint(t *testing.T) {
 
 	esme := NewEsme("testEsme01", net.ParseIP("127.0.0.1"), 0)
 	esme.peerBinds = []smppBindInfo{
-		smppBindInfo{
+		{
 			remoteIP:   net.ParseIP("127.0.0.1"),
 			remotePort: smscListeningPort,
 			smscName:   "testSmsc01",
