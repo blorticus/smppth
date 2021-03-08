@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	smpp "github.com/blorticus/smpp-go"
+	"github.com/blorticus/smpp"
 )
 
 func testSmppMsgBindTransceiver01() []byte {

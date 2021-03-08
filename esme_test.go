@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	smpp "github.com/blorticus/smpp-go"
+	"github.com/blorticus/smpp"
 )
 
 func TestEsmePeerMessageListener(t *testing.T) {

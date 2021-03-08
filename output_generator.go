@@ -3,7 +3,7 @@ package smppth
 import (
 	"fmt"
 
-	smpp "github.com/blorticus/smpp-go"
+	"github.com/blorticus/smpp"
 )
 
 // OutputGenerator is an inteface describing methods to generate standard responses to commands or

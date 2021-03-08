@@ -6,7 +6,7 @@ import (
 	"net"
 	"sync"
 
-	smpp "github.com/blorticus/smpp-go"
+	"github.com/blorticus/smpp"
 )
 
 // SMSC represents an SMPP 3.4 server, which accepts one or more transport connections and responds

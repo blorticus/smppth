@@ -12,4 +12,7 @@
 *.out
 bin/*
 pkg/*
-.vscode/launch.json
+
+# IDE files
+.vscode/*
+.devcontainer/*

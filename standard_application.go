@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	smpp "github.com/blorticus/smpp-go"
+	"github.com/blorticus/smpp"
 )
 
 // StandardApplication provides a standard method for accepting user input commands (marshalled to UserCommand structs),

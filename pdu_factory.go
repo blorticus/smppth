@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strconv"
 
-	smpp "github.com/blorticus/smpp-go"
+	"github.com/blorticus/smpp"
 )
 
 // PduFactory instances produces smpp.PDU objects for various message types.  Implementations can alter the default
