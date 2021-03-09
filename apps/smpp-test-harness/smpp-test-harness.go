@@ -7,6 +7,7 @@ import (
 	"path"
 
 	smppth "github.com/blorticus/smppth"
+	"github.com/blorticus/tpcli"
 )
 
 var errLogger *log.Logger
@@ -30,10 +31,16 @@ func main() {
 	}
 	agentGroup.AttachDebugLoggerWriter(debugLogger.Writer())
 
-	ui := BuildUserInterface()
-	ui.AttachDebugLogger(debugLogger)
+	ui := tpcli.NewUI().
+		ChangeStackingOrderTo(tpcli.GeneralErrorCommand).
+		UsingCommandHistoryPanel()
 
-	commandInputTextChannel := ui.UserInputStringCommandChannel()
+	commandInputTextChannel := ui.ChannelOfControlMessagesFromTheUI()
+
+	//	ui := BuildUserInterface()
+	//	ui.AttachDebugLogger(debugLogger)
+
+	//  commandInputTextChannel := ui.UserInputStringCommandChannel()
 
 	application := smppth.NewStandardApplication().
 		SetPduFactory(smppth.NewDefaultPduFactory()).
