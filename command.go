@@ -1,7 +1,7 @@
 package smppth
 
 import (
-	smpp "github.com/blorticus/smpp-go"
+	"github.com/blorticus/smpp"
 )
 
 // UserCommandType is the type of user command provided in a UserCommand struct

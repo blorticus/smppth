@@ -4,7 +4,7 @@ import (
 	"net"
 	"testing"
 
-	smpp "github.com/blorticus/smpp-go"
+	"github.com/blorticus/smpp"
 )
 
 func TestSmscPeerMessageHandler(t *testing.T) {

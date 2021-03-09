@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 
-	smpp "github.com/blorticus/smpp-go"
+	"github.com/blorticus/smpp"
 )
 
 // AgentGroup manages a group of Agents, routing messages for delivery to them,

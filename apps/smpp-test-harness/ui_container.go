@@ -63,7 +63,7 @@ func (ui *TestHarnessTextUI) createCommandHistoryTextView() *TestHarnessTextUI {
 func (ui *TestHarnessTextUI) createCommandInputField() *TestHarnessTextUI {
 	ui.userCommandInputField = tview.NewInputField().
 		SetLabel("Enter Command> ").
-		SetFieldBackgroundColor(tcell.ColorBlack).
+		SetFieldBackgroundColor(0).
 		SetFieldWidth(100).
 		SetDoneFunc(func(key tcell.Key) {
 			if key == tcell.KeyEnter {

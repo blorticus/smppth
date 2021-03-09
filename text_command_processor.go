@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
-	smpp "github.com/blorticus/smpp-go"
+	"github.com/blorticus/smpp"
 )
 
 // TextCommandProcessor accepts incoming text commands and, if they match the TextCommandProcessor syntax,

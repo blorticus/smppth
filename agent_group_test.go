@@ -1,9 +1,10 @@
 package smppth
 
 import (
-	smpp "github.com/blorticus/smpp-go"
 	"testing"
 	"time"
+
+	"github.com/blorticus/smpp"
 )
 
 func TestAgentGroupSetOfManagedAgents(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	smpp "github.com/blorticus/smpp-go"
+	"github.com/blorticus/smpp"
 )
 
 func TestDefaultFactoryCreateEnquireLink(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 	"net"
 	"syscall"
 
-	smpp "github.com/blorticus/smpp-go"
+	"github.com/blorticus/smpp"
 	"golang.org/x/sys/unix"
 )
 
