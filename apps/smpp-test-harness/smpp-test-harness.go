@@ -35,32 +35,30 @@ func main() {
 		ChangeStackingOrderTo(tpcli.GeneralErrorCommand).
 		UsingCommandHistoryPanel()
 
-	commandInputTextChannel := ui.ChannelOfControlMessagesFromTheUI()
+	commandInputTextChannel := ui.ChannelOfEnteredCommands()
 
-	//	ui := BuildUserInterface()
-	//	ui.AttachDebugLogger(debugLogger)
-
-	//  commandInputTextChannel := ui.UserInputStringCommandChannel()
-
+	userWantsToExit := make(chan bool)
 	application := smppth.NewStandardApplication().
 		SetPduFactory(smppth.NewDefaultPduFactory()).
 		SetOutputGenerator(smppth.NewStandardOutputGenerator()).
 		SetAgentGroup(agentGroup).
-		OnQuit(func() { ui.Exit() }).
+		OnQuit(func() { ui.Stop(); userWantsToExit <- true }).
 		SetEventOutputWriter(ui)
 
 	application.AttachEventChannel(agentGroup.SharedAgentEventChannel())
 
 	application.EnableDebugMessages(debugLogger.Writer())
 
-	go application.Start()
 	go startListeningForUserCommands(commandInputTextChannel, ui, application)
+	go application.Start()
 	agentGroup.StartAllAgents()
 
-	ui.StartRunning()
+	ui.Start()
+
+	<-userWantsToExit
 }
 
-func startListeningForUserCommands(commandInputTextChannel <-chan string, ui *TestHarnessTextUI, app *smppth.StandardApplication) {
+func startListeningForUserCommands(commandInputTextChannel <-chan string, ui *tpcli.Tpcli, app *smppth.StandardApplication) {
 	textCommandProcessor := smppth.NewTextCommandProcessor()
 
 	for {
@@ -69,7 +67,7 @@ func startListeningForUserCommands(commandInputTextChannel <-chan string, ui *Te
 		userCommandStruct, err := textCommandProcessor.ConvertCommandLineStringToUserCommand(nextUserCommandText)
 
 		if err != nil {
-			ui.WriteLineToEventBox(fmt.Sprintf("[ERROR] Invalid command (%s)", nextUserCommandText))
+			ui.FmtToErrorOutput("[ERROR] Invalid command (%s)", nextUserCommandText)
 		} else {
 			debugLogger.Printf("(main) Received next command: %s", nextUserCommandText)
 			app.ReceiveNextCommand(userCommandStruct)
