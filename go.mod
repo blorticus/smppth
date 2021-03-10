@@ -4,6 +4,8 @@ go 1.16
 
 require (
 	github.com/blorticus/smpp v0.1.0
+	github.com/blorticus/tpcli v0.2.0
+	github.com/gdamore/tcell v1.3.0 // indirect
 	github.com/gdamore/tcell/v2 v2.2.0
 	github.com/rivo/tview v0.0.0-20210217110421-8a8f78a6dd01
 	golang.org/x/sys v0.0.0-20210308170721-88b6017d0656
